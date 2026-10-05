@@ -137,24 +137,6 @@ export function $focusReviewFinding(findingId: string) {
   return true;
 }
 
-export function $applyReviewSuggestion(findingId: string, suggestion: string) {
-  if (!$focusReviewFinding(findingId)) return false;
-  const selection = $createRangeSelection();
-  const nodes = $getRoot()
-    .getAllTextNodes()
-    .filter((node) => $isReviewTextNode(node) && node.getFindingId() === findingId);
-  if (nodes.length === 0) return false;
-  selection.anchor.set(nodes[0].getKey(), 0, 'text');
-  selection.focus.set(
-    nodes[nodes.length - 1].getKey(),
-    nodes[nodes.length - 1].getTextContentSize(),
-    'text',
-  );
-  $setSelection(selection);
-  selection.insertText(suggestion);
-  return true;
-}
-
 export function ReviewPlugin({
   findings,
   onActivate,

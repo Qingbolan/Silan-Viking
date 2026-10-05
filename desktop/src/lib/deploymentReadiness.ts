@@ -1,9 +1,13 @@
+import type { RemoteStatusFailure } from './remoteStatus';
+
 export type DeploymentPlanState = 'loading' | 'ready' | 'error';
 
 export type DeploymentReadinessState =
   | 'not_configured'
   | 'uncommitted'
   | 'comparing'
+  | 'not_configured'
+  | 'remote_unavailable'
   | 'synchronized'
   | 'remote_ahead'
   | 'diverged'
@@ -27,7 +31,9 @@ export type DeploymentReadiness = {
 type DeploymentReadinessInput = {
   localCommitCount: number | null;
   remoteCommitCount: number;
-  syncState: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown' | 'not_configured' | 'uncommitted' | null;
+  syncState: DeliverySyncState | null;
+  /** A deployed-status failure that is ready to be shown (after retries). */
+  remoteFailure?: RemoteStatusFailure | null;
   workspaceChangeCount: number;
   unsavedDocumentCount: number;
   planState: DeploymentPlanState;
@@ -36,10 +42,19 @@ type DeploymentReadinessInput = {
   pulling: boolean;
 };
 
+type DeliverySyncState =
+  | 'synchronized'
+  | 'local_ahead'
+  | 'remote_ahead'
+  | 'diverged'
+  | 'remote_unknown'
+  | 'not_configured'
+  | 'uncommitted';
+
 type DeliverySyncSnapshot = {
   local_head: string;
   remote_head: string;
-  state: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown' | 'not_configured' | 'uncommitted';
+  state: DeliverySyncState;
 };
 
 /**
@@ -80,6 +95,7 @@ export const deploymentReadinessFor = ({
   localCommitCount,
   remoteCommitCount,
   syncState,
+  remoteFailure = null,
   workspaceChangeCount,
   unsavedDocumentCount,
   planState,
@@ -94,6 +110,17 @@ export const deploymentReadinessFor = ({
       actionTitle: syncState === 'not_configured' ? 'Configure a deployment target and device access when you are ready to publish' : 'Review and commit your local content first',
     };
   }
+
+  if (localCommitCount === null && remoteFailure) {
+    return {
+      state: 'remote_unavailable',
+      canDeploy: false,
+      canPull: false,
+      message: remoteFailure.message,
+      actionTitle: remoteFailure.message,
+    };
+  }
+
   if (localCommitCount === null) {
     return {
       state: 'comparing',

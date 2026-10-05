@@ -154,6 +154,16 @@ pub(crate) struct GeoInsightReport {
     pub(crate) summary: String,
     pub(crate) metrics: Vec<GeoMetric>,
     pub(crate) actions: Vec<GeoAction>,
+    /// Explains each part of `score`.
+    pub(crate) score_components: Vec<GeoScoreComponent>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct GeoScoreComponent {
+    pub(crate) label: String,
+    pub(crate) points: u32,
+    pub(crate) max: u32,
+    pub(crate) reason: String,
 }
 
 #[derive(Debug, Serialize)]

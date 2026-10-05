@@ -50,9 +50,11 @@ export function SelectionBubblePlugin({
   disabled,
   offsetForMainToolbar,
   onSelectionAssist,
+  selectionAssistDisabledReason = null,
 }: {
   disabled: boolean;
   offsetForMainToolbar: boolean;
+  selectionAssistDisabledReason?: string | null;
   onSelectionAssist?: (
     request: MarkdownSelectionAssistRequest,
   ) => Promise<MarkdownSelectionAssistResult>;
@@ -252,8 +254,8 @@ export function SelectionBubblePlugin({
               <button
                 type="button"
                 aria-label="Optimize expression"
-                title="Optimize expression"
-                disabled={Boolean(busyAction)}
+                title={selectionAssistDisabledReason || 'Optimize expression · OpenAI (asks for confirmation)'}
+                disabled={Boolean(busyAction) || Boolean(selectionAssistDisabledReason)}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => void runAssist('optimize_expression')}
               >
@@ -262,8 +264,8 @@ export function SelectionBubblePlugin({
               <button
                 type="button"
                 aria-label="Agent local edit"
-                title="Agent local edit"
-                disabled={Boolean(busyAction)}
+                title={selectionAssistDisabledReason || 'Agent local edit · OpenAI (asks for confirmation)'}
+                disabled={Boolean(busyAction) || Boolean(selectionAssistDisabledReason)}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   setInstruction('');
@@ -277,8 +279,8 @@ export function SelectionBubblePlugin({
           <button
             type="button"
             aria-label="Comment issue"
-            title="Comment issue"
-            disabled={Boolean(busyAction)}
+            title={selectionAssistDisabledReason || 'Comment issue · OpenAI (asks for confirmation)'}
+            disabled={Boolean(busyAction) || Boolean(selectionAssistDisabledReason)}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => void runAssist('comment_issue')}
           >

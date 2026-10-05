@@ -5481,7 +5481,9 @@ h1 {
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  /* Top layer: above the full-screen content editor (24) and its chrome,
+     below design-system confirmations (1100) that may open from a dialog. */
+  z-index: 1000;
   display: grid;
   place-items: center;
   background: var(--ds-color-overlay);
@@ -6749,10 +6751,17 @@ h1 {
   z-index: 42;
 }
 
+/* Every editor tool shows its name: icons alone looked alike and one of
+   them starts a paid provider call. */
 .content-editor-actions .content-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-width: 32px;
-  width: 32px;
-  padding: 0;
+  width: auto;
+  padding: 0 10px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .content-editor-actions .content-view-toggle {
@@ -6877,7 +6886,6 @@ h1 {
 .content-explorer-icon {
   grid-column: 3;
   grid-row: 1;
-  opacity: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6889,15 +6897,6 @@ h1 {
   color: var(--editor-rail-fg-muted);
   cursor: pointer;
   transition: color var(--ds-duration-fast) var(--ds-ease-standard), background var(--ds-duration-fast) var(--ds-ease-standard);
-}
-
-.content-explorer-top:hover .content-explorer-icon,
-.content-explorer-top:focus-within .content-explorer-icon {
-  opacity: 1;
-}
-
-@media (hover: none) {
-  .content-explorer-top .content-explorer-icon { opacity: 1; }
 }
 
 .content-outline .content-outline-row span {
@@ -9315,10 +9314,6 @@ button.ai-cover-credential:hover:not(:disabled) {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.45;
-}
-
-.language-review-overlay {
-  z-index: 60;
 }
 
 .language-review-card {
@@ -12017,3 +12012,187 @@ button.ai-cover-credential:hover:not(:disabled) {
 .capture-video__actions button:hover { background: var(--color-surfaceSecondary); }
 .capture-video__details p { font-size: 12px; color: var(--color-error); }
 @media (max-width: 720px) { .capture-video { grid-template-columns: 1fr; } .capture-video__cover img { width: 160px; } }
+
+/* Paid AI, review suggestions, commit preview, notices */
+.paid-ai-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.paid-ai-hint button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.language-review-advisory,
+.review-suggestion-note,
+.section-commit-reason {
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.review-suggestion-card,
+.section-commit-card {
+  width: min(720px, calc(100vw - 48px));
+  max-height: 85vh;
+  overflow: auto;
+}
+
+.review-suggestion-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.review-suggestion-head h3 {
+  margin: 2px 0;
+}
+
+.review-suggestion-advice {
+  display: grid;
+  gap: 2px;
+  margin: 12px 0;
+}
+
+.review-suggestion-diff {
+  display: grid;
+  gap: 10px;
+}
+
+.review-suggestion-diff > * {
+  display: grid;
+  gap: 4px;
+}
+
+.review-suggestion-diff del {
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.review-suggestion-diff textarea,
+.section-commit-message textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  background: rgba(22, 163, 74, 0.06);
+}
+
+.section-commit-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 10px;
+}
+
+.section-commit-preview .version-change-row {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.section-commit-preview .version-change-row[aria-selected="true"] {
+  background: var(--editor-rail-surface-hover, rgba(0, 0, 0, 0.05));
+}
+
+.section-commit-diff {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+}
+
+.section-commit-message {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.creation-notice,
+.workspace-switch-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(22, 163, 74, 0.08);
+  font-size: 12px;
+}
+
+.creation-notice button,
+.workspace-switch-notice button {
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.workspace-switch-notice {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.workspace-switch-notice button {
+  text-decoration: underline;
+}
+
+.geo-score-components {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.geo-score-component {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+}
+
+.geo-score-component p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+}
+
+.ranking-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ranking-row > .recent-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.ranking-row-action {
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-solid);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.workspace-switcher {
+  display: grid;
+  gap: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.workspace-switcher select {
+  width: 100%;
+}

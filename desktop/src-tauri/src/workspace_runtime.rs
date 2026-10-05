@@ -11,6 +11,11 @@ use std::sync::{OnceLock, RwLock};
 
 const REGISTRY_FILE: &str = "workspace.json";
 const REGISTRY_VERSION: u8 = 1;
+/// Recently opened workspaces live beside `workspace.json`, so a launch from
+/// another directory never makes the previous workspace unreachable.
+const RECENT_FILE: &str = "recent-workspaces.json";
+const RECENT_VERSION: u8 = 1;
+const RECENT_LIMIT: usize = 8;
 
 static RUNTIME: OnceLock<DesktopRuntime> = OnceLock::new();
 
@@ -19,6 +24,48 @@ struct DesktopRuntime {
     registry_path: PathBuf,
     selection: RwLock<Option<WorkspaceSelection>>,
     initialization_error: RwLock<Option<String>>,
+    /// The workspace that was active before this launch replaced it.
+    replaced_workspace: RwLock<Option<RecentWorkspace>>,
+}
+
+/// One device-local entry of the recent-workspace list. Only paths and names
+/// are stored; never key material or repository credentials.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct RecentWorkspace {
+    pub(crate) project_root: PathBuf,
+    pub(crate) project_name: String,
+    pub(crate) repository_url: String,
+    pub(crate) deployment_key_path: Option<PathBuf>,
+    pub(crate) last_opened_at: u64,
+}
+
+impl RecentWorkspace {
+    fn from_selection(selection: &WorkspaceSelection, opened_at: u64) -> Self {
+        Self {
+            project_root: selection.project_root.clone(),
+            project_name: selection.project_name.clone(),
+            repository_url: selection.repository_url.clone(),
+            deployment_key_path: selection.deployment_key_path.clone(),
+            last_opened_at: opened_at,
+        }
+    }
+
+    fn ready_selection(&self) -> WorkspaceSelection {
+        WorkspaceSelection {
+            version: REGISTRY_VERSION,
+            project_root: self.project_root.clone(),
+            repository_url: self.repository_url.clone(),
+            project_name: self.project_name.clone(),
+            deployment_key_path: self.deployment_key_path.clone(),
+            state: WorkspaceActivationState::Ready,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RecentWorkspaceRegistry {
+    version: u8,
+    workspaces: Vec<RecentWorkspace>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -68,6 +115,17 @@ pub(crate) fn initialize(config_dir: impl AsRef<Path>) -> Result<(), String> {
         Ok(selection) => (selection, None),
         Err(error) => (None, Some(error)),
     };
+    let previous = selection.clone();
+    if let Some(previous) = previous
+        .as_ref()
+        .filter(|saved| saved.state == WorkspaceActivationState::Ready)
+    {
+        // Older registries predate the recent list; never lose the saved
+        // workspace when this launch replaces it.
+        if let Err(error) = remember_recent(&registry_path, previous) {
+            initialization_error.get_or_insert(error);
+        }
+    }
     let launch_root = std::env::var_os("SILAN_DESKTOP_PROJECT")
         .map(PathBuf::from)
         .or_else(|| {
@@ -88,12 +146,14 @@ pub(crate) fn initialize(config_dir: impl AsRef<Path>) -> Result<(), String> {
             Err(error) => initialization_error = Some(error),
         }
     }
+    let replaced_workspace = replaced_workspace(previous.as_ref(), selection.as_ref());
     apply_device_environment(selection.as_ref());
     RUNTIME
         .set(DesktopRuntime {
             registry_path,
             selection: RwLock::new(selection),
             initialization_error: RwLock::new(initialization_error),
+            replaced_workspace: RwLock::new(replaced_workspace),
         })
         .map_err(|_| "desktop workspace runtime was initialized more than once".to_owned())
 }
@@ -133,6 +193,58 @@ pub(crate) fn activate_local_workspace(project_root: &Path) -> Result<(), String
     let selected =
         register_local_workspace(&runtime.registry_path, project_root, previous.as_ref())?;
     save_selection(selected)
+}
+
+/// The previously recorded workspace when this launch opened a different one.
+fn replaced_workspace(
+    previous: Option<&WorkspaceSelection>,
+    current: Option<&WorkspaceSelection>,
+) -> Option<RecentWorkspace> {
+    let previous = previous.filter(|saved| saved.state == WorkspaceActivationState::Ready)?;
+    let current = current?;
+    (canonical(&previous.project_root) != canonical(&current.project_root))
+        .then(|| RecentWorkspace::from_selection(previous, 0))
+}
+
+fn canonical(path: &Path) -> PathBuf {
+    fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+}
+
+pub(crate) fn replaced_workspace_notice() -> Option<RecentWorkspace> {
+    runtime()
+        .ok()
+        .and_then(|runtime| runtime.replaced_workspace.read().ok()?.clone())
+}
+
+/// Recently opened workspaces, most recent first.
+pub(crate) fn recent_workspaces() -> Result<Vec<RecentWorkspace>, String> {
+    read_recent(&recent_path(&runtime()?.registry_path))
+}
+
+/// Make a recently opened workspace active again, restoring the device
+/// settings it was last used with. The caller reloads the interface.
+pub(crate) fn switch_to_recent(project_root: &Path) -> Result<WorkspaceSelection, String> {
+    let runtime = runtime()?;
+    let target = canonical(project_root);
+    let previous = read_recent(&recent_path(&runtime.registry_path))?
+        .into_iter()
+        .find(|workspace| canonical(&workspace.project_root) == target)
+        .map(|workspace| workspace.ready_selection())
+        .ok_or_else(|| format!("`{}` is not a recent workspace", target.display()))?;
+    let selection = register_local_workspace(&runtime.registry_path, &target, Some(&previous))?;
+    apply_device_environment(Some(&selection));
+    *runtime
+        .selection
+        .write()
+        .map_err(|_| "desktop workspace registry lock is poisoned".to_owned())? =
+        Some(selection.clone());
+    if let Ok(mut error) = runtime.initialization_error.write() {
+        *error = None;
+    }
+    if let Ok(mut replaced) = runtime.replaced_workspace.write() {
+        *replaced = None;
+    }
+    Ok(selection)
 }
 
 pub(crate) fn initialization_error() -> Option<String> {
@@ -210,19 +322,68 @@ fn read_selection(path: &Path) -> Result<Option<WorkspaceSelection>, String> {
 }
 
 fn persist_selection(path: &Path, selection: &WorkspaceSelection) -> Result<(), String> {
+    let bytes = serde_json::to_vec_pretty(selection)
+        .map_err(|error| format!("cannot encode workspace registry: {error}"))?;
+    write_atomically(path, &bytes)?;
+    if selection.state == WorkspaceActivationState::Ready {
+        remember_recent(path, selection)?;
+    }
+    Ok(())
+}
+
+fn recent_path(registry_path: &Path) -> PathBuf {
+    registry_path.with_file_name(RECENT_FILE)
+}
+
+fn read_recent(path: &Path) -> Result<Vec<RecentWorkspace>, String> {
+    if !path.is_file() {
+        return Ok(Vec::new());
+    }
+    let source = fs::read_to_string(path)
+        .map_err(|error| format!("cannot read `{}`: {error}", path.display()))?;
+    let registry: RecentWorkspaceRegistry = serde_json::from_str(&source)
+        .map_err(|error| format!("cannot parse `{}`: {error}", path.display()))?;
+    if registry.version != RECENT_VERSION {
+        return Err(format!(
+            "unsupported recent workspace registry version {}",
+            registry.version
+        ));
+    }
+    Ok(registry.workspaces)
+}
+
+/// Move `selection` to the front of the recent list beside `registry_path`.
+fn remember_recent(registry_path: &Path, selection: &WorkspaceSelection) -> Result<(), String> {
+    let path = recent_path(registry_path);
+    let opened_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs())
+        .unwrap_or_default();
+    let root = canonical(&selection.project_root);
+    let mut workspaces = read_recent(&path)?;
+    workspaces.retain(|workspace| canonical(&workspace.project_root) != root);
+    workspaces.insert(0, RecentWorkspace::from_selection(selection, opened_at));
+    workspaces.truncate(RECENT_LIMIT);
+    let bytes = serde_json::to_vec_pretty(&RecentWorkspaceRegistry {
+        version: RECENT_VERSION,
+        workspaces,
+    })
+    .map_err(|error| format!("cannot encode recent workspaces: {error}"))?;
+    write_atomically(&path, &bytes)
+}
+
+fn write_atomically(path: &Path, bytes: &[u8]) -> Result<(), String> {
     let parent = path.parent().ok_or_else(|| {
         format!(
             "cannot resolve desktop config directory for `{}`",
             path.display()
         )
     })?;
-    let bytes = serde_json::to_vec_pretty(selection)
-        .map_err(|error| format!("cannot encode workspace registry: {error}"))?;
     let mut temporary = tempfile::NamedTempFile::new_in(parent)
         .map_err(|error| format!("cannot stage `{}`: {error}", path.display()))?;
     use std::io::Write;
     temporary
-        .write_all(&bytes)
+        .write_all(bytes)
         .map_err(|error| format!("cannot stage `{}`: {error}", path.display()))?;
     temporary
         .as_file()
@@ -365,6 +526,46 @@ mod tests {
                     .unwrap();
             assert_eq!(selection.state, WorkspaceActivationState::Ready);
         }
+    }
+
+    #[test]
+    fn replacing_a_workspace_keeps_it_in_the_recent_list_with_its_device_settings() {
+        let directory = tempfile::tempdir().unwrap();
+        let registry = directory.path().join(REGISTRY_FILE);
+        let first_root = local_project(directory.path(), "first");
+        let mut first = register_local_workspace(&registry, &first_root, None).unwrap();
+        first.deployment_key_path = Some(PathBuf::from("/keys/first.pem"));
+        persist_selection(&registry, &first).unwrap();
+        let second = register_local_workspace(
+            &registry,
+            &local_project(directory.path(), "second"),
+            Some(&first),
+        )
+        .unwrap();
+
+        let notice = replaced_workspace(Some(&first), Some(&second)).expect("launch notice");
+        assert_eq!(notice.project_name, "first");
+        assert!(replaced_workspace(Some(&second), Some(&second)).is_none());
+
+        let recent = read_recent(&recent_path(&registry)).unwrap();
+        assert_eq!(
+            recent
+                .iter()
+                .map(|workspace| workspace.project_name.as_str())
+                .collect::<Vec<_>>(),
+            ["second", "first"]
+        );
+        let restored =
+            register_local_workspace(&registry, &first_root, Some(&recent[1].ready_selection()))
+                .unwrap();
+        assert_eq!(
+            restored.deployment_key_path,
+            Some(PathBuf::from("/keys/first.pem"))
+        );
+        assert_eq!(
+            read_recent(&recent_path(&registry)).unwrap()[0].project_name,
+            "first"
+        );
     }
 
     #[test]

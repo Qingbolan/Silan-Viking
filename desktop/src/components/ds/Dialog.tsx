@@ -23,8 +23,16 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), ' +
   'select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export const Dialog: React.FC<DialogProps> = ({ open, onClose, children }) => {
-  const cardRef = React.useRef<HTMLDivElement>(null);
+/**
+ * Shared modal behaviour for every top-layer dialog: capture and restore
+ * focus, autofocus the first [data-autofocus] (else the card), close on Esc,
+ * and keep Tab inside the card.
+ */
+export function useModalFocus(
+  open: boolean,
+  cardRef: React.RefObject<HTMLElement>,
+  onClose: () => void,
+) {
   const restoreRef = React.useRef<HTMLElement | null>(null);
 
   // Capture the previously focused element once per open, restore on close.
@@ -77,6 +85,11 @@ export const Dialog: React.FC<DialogProps> = ({ open, onClose, children }) => {
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [open, onClose]);
+}
+
+export const Dialog: React.FC<DialogProps> = ({ open, onClose, children }) => {
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  useModalFocus(open, cardRef, onClose);
 
   if (!open) return null;
 

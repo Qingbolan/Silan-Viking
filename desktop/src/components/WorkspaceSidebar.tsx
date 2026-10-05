@@ -1,4 +1,5 @@
 import type { EntityFilter } from '../types';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 type SidebarGlyphName =
   | 'blog'
@@ -158,6 +159,7 @@ export function WorkspaceSidebar({
         })}
       </nav>
 
+      <WorkspaceSwitcher />
       <footer className="sidebar-footer">
         <div className="sidebar-account">
           <button

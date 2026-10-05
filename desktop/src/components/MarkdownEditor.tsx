@@ -65,7 +65,6 @@ import { SelectionBubblePlugin } from './editor/plugins/SelectionBubblePlugin';
 import { TableToolbarPlugin } from './editor/plugins/TableToolbarPlugin';
 import { ImageEditingPlugin } from './editor/plugins/ImageEditingPlugin';
 import {
-  $applyReviewSuggestion,
   $focusReviewFinding,
   ReviewPlugin,
 } from './editor/plugins/ReviewPlugin';
@@ -100,7 +99,6 @@ export type MarkdownEditorHandle = {
   insertMarkdown: (markdown: string) => string | null;
   replaceMarkdown: (markdown: string) => string | null;
   focusReviewFinding: (findingId: string) => boolean;
-  applyReviewSuggestion: (findingId: string) => string | null;
 };
 
 export type MarkdownEditingMode = 'rich' | 'source';
@@ -126,11 +124,12 @@ export type MarkdownEditorProps = {
   onImportImages?: MarkdownImageImporter;
   onEditingModeChange?: (mode: MarkdownEditingMode) => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
+  /** When set, paid selection assists are disabled and this explains why. */
+  selectionAssistDisabledReason?: string | null;
   onSelectionAssist?: (
     request: MarkdownSelectionAssistRequest,
   ) => Promise<MarkdownSelectionAssistResult>;
   onReviewFindingActivate?: (findingId: string) => void;
-  onReviewFindingApplied?: (findingId: string) => void;
 };
 
 const emptyPlugins: MarkdownEditorPlugin[] = [];
@@ -198,8 +197,8 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
     onEditingModeChange,
     onKeyDown,
     onSelectionAssist,
+    selectionAssistDisabledReason = null,
     onReviewFindingActivate,
-    onReviewFindingApplied,
   }, forwardedRef) {
     const sourceRef = React.useRef<HTMLTextAreaElement | null>(null);
     const sourceHighlightRef = React.useRef<HTMLPreElement | null>(null);
@@ -208,7 +207,6 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
     const defaultTitleRef = React.useRef(defaultTitle);
     const onChangeRef = React.useRef(onChange);
     const reviewFindingsRef = React.useRef(reviewFindings);
-    const onReviewFindingAppliedRef = React.useRef(onReviewFindingApplied);
     const [phase, setPhase] = React.useState<EditorPhase>('creating');
     const [editor, setEditor] = React.useState<LexicalEditor | null>(null);
     const [uncontrolledMode, setUncontrolledMode] = React.useState<MarkdownEditingMode>('rich');
@@ -256,7 +254,6 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
     onChangeRef.current = onChange;
     defaultTitleRef.current = defaultTitle;
     reviewFindingsRef.current = reviewFindings;
-    onReviewFindingAppliedRef.current = onReviewFindingApplied;
 
     const handleReady = React.useCallback((createdEditor: LexicalEditor | null) => {
       setEditor(createdEditor);
@@ -403,31 +400,7 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
       return focused;
     }, [editor, sourceMode]);
 
-    const applyReviewSuggestion = React.useCallback((findingId: string) => {
-      if (inactive) return null;
-      const finding = reviewFindingsRef.current.find((candidate) => candidate.id === findingId);
-      if (!finding) return null;
-      if (sourceMode) {
-        const current = valueRef.current;
-        const offset = current.indexOf(finding.quote);
-        if (offset < 0) return null;
-        const next = `${current.slice(0, offset)}${finding.suggestion}${current.slice(offset + finding.quote.length)}`;
-        syncSourceToTree(next);
-        onReviewFindingAppliedRef.current?.(findingId);
-        return next;
-      }
-      if (!editor) return null;
-      let applied = false;
-      editor.update(() => {
-        applied = $applyReviewSuggestion(findingId, finding.suggestion);
-      }, { discrete: true });
-      if (!applied) return null;
-      onReviewFindingAppliedRef.current?.(findingId);
-      return readMarkdown(editor);
-    }, [editor, inactive, sourceMode, syncSourceToTree]);
-
     React.useImperativeHandle(forwardedRef, () => ({
-      applyReviewSuggestion,
       focus,
       focusReviewFinding,
       getMarkdown: currentMarkdown,
@@ -435,7 +408,6 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
       insertMarkdown,
       replaceMarkdown,
     }), [
-      applyReviewSuggestion,
       currentMarkdown,
       currentTitle,
       focus,
@@ -613,6 +585,7 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
                   disabled={disabled}
                   offsetForMainToolbar={toolbarVisible}
                   onSelectionAssist={onSelectionAssist}
+                  selectionAssistDisabledReason={selectionAssistDisabledReason}
                 />
               </>
             )}
@@ -709,8 +682,8 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
                         <button
                           type="button"
                           aria-label="Optimize expression"
-                          title="Optimize expression"
-                          disabled={Boolean(sourceAssistBusy)}
+                          title={selectionAssistDisabledReason || 'Optimize expression · OpenAI (asks for confirmation)'}
+                          disabled={Boolean(sourceAssistBusy) || Boolean(selectionAssistDisabledReason)}
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => void runSourceSelectionAssist('optimize_expression')}
                         >
@@ -719,8 +692,8 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
                         <button
                           type="button"
                           aria-label="Agent local edit"
-                          title="Agent local edit"
-                          disabled={Boolean(sourceAssistBusy)}
+                          title={selectionAssistDisabledReason || 'Agent local edit · OpenAI (asks for confirmation)'}
+                          disabled={Boolean(sourceAssistBusy) || Boolean(selectionAssistDisabledReason)}
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => {
                             setSourceInstruction('');
@@ -734,8 +707,8 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
                     <button
                       type="button"
                       aria-label="Comment issue"
-                      title="Comment issue"
-                      disabled={Boolean(sourceAssistBusy)}
+                      title={selectionAssistDisabledReason || 'Comment issue · OpenAI (asks for confirmation)'}
+                      disabled={Boolean(sourceAssistBusy) || Boolean(selectionAssistDisabledReason)}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => void runSourceSelectionAssist('comment_issue')}
                     >

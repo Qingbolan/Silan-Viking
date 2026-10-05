@@ -15,8 +15,9 @@ use crate::openai_credentials::DesktopOpenAiCredentials;
 use crate::workspace_onboarding::{
     self, CompleteWorkspaceOnboardingInput, DeploymentKeyValidation, DesktopBootstrapStatus,
     DesktopJoinWorkspaceInput, DesktopJoinWorkspaceResult, RepositoryAccessInput,
-    RepositoryAccessResult,
+    RepositoryAccessResult, WorkspaceSwitcherState,
 };
+use crate::workspace_runtime;
 use silan_viking_app::{
     ArticleImageAttributionPlan, ArticleImageAttributionResult, AudioTranscriptionRequest,
     DeletedPrivateResource, LanguageAuditReport, OpenAiAudioTranscriber,
@@ -27,6 +28,26 @@ use tauri::{Emitter, Manager};
 #[tauri::command]
 pub(crate) fn get_workspace_bootstrap_status() -> DesktopBootstrapStatus {
     workspace_onboarding::bootstrap_status()
+}
+
+#[tauri::command]
+pub(crate) fn get_workspace_switcher() -> Result<WorkspaceSwitcherState, String> {
+    workspace_onboarding::workspace_switcher_state()
+}
+
+/// Activate a recently opened workspace. The webview reloads afterwards so
+/// every view is rebuilt from the newly selected project.
+#[tauri::command]
+pub(crate) fn switch_workspace(
+    app: tauri::AppHandle,
+    project_root: String,
+) -> Result<WorkspaceSwitcherState, String> {
+    workspace_runtime::switch_to_recent(&PathBuf::from(project_root))?;
+    let content_root = crate::application::desktop_content_root()?;
+    app.asset_protocol_scope()
+        .allow_directory(content_root.join("resources"), true)
+        .map_err(|error| format!("cannot allow workspace media: {error}"))?;
+    workspace_onboarding::workspace_switcher_state()
 }
 
 #[tauri::command]
@@ -735,8 +756,16 @@ pub(crate) fn get_version_status(scope: String) -> Result<VersionStatus, String>
 }
 
 #[tauri::command]
-pub(crate) fn release_scope(scope: String) -> Result<VersionStatus, String> {
-    DesktopWorkspace::from_environment()?.release_scope(&scope)
+pub(crate) fn release_scope(scope: String, message: String) -> Result<VersionStatus, String> {
+    DesktopWorkspace::from_environment()?.release_scope(&scope, &message)
+}
+
+#[tauri::command]
+pub(crate) async fn get_release_file_diff(scope: String, path: String) -> Result<String, String> {
+    run_background("section commit preview diff", move || {
+        DesktopWorkspace::from_environment()?.release_file_diff(&scope, &path)
+    })
+    .await
 }
 
 #[tauri::command]

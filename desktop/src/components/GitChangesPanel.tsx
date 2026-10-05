@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import type { WorkspaceFileChange } from '../types';
+import { usePaidAiGate } from './PaidAiGate';
 
 type GitChangesPanelProps = {
   onClose: () => void;
@@ -81,6 +82,8 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
   const [generatingMessage, setGeneratingMessage] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
   const [commitError, setCommitError] = React.useState<string | null>(null);
+  const paidAi = usePaidAiGate();
+  const messageAvailability = paidAi.availability('commit_message');
 
   const loadChanges = React.useCallback(async () => {
     setLoading(true);
@@ -126,6 +129,11 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
 
   const generateCommitMessage = async () => {
     if (generatingMessage || committing || stagedPaths.length === 0) return;
+    if (!await paidAi.confirm({
+      kind: 'commit_message',
+      action: 'Generate a commit message',
+      scope: `the staged diff of ${stagedPaths.length} file${stagedPaths.length === 1 ? '' : 's'}`,
+    })) return;
     setGeneratingMessage(true);
     setCommitError(null);
     try {
@@ -325,10 +333,10 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
               <button
                 type="button"
                 className="git-panel-generate-message"
-                disabled={generatingMessage || committing || stagedPaths.length === 0}
+                disabled={generatingMessage || committing || stagedPaths.length === 0 || !messageAvailability.enabled}
                 onClick={() => void generateCommitMessage()}
-                title="Generate commit message with AI"
-                aria-label="Generate commit message with AI"
+                title={messageAvailability.reason || `Generate commit message with ${paidAi.providerLabel('commit_message')} (optional; asks for confirmation)`}
+                aria-label={`Generate commit message with ${paidAi.providerLabel('commit_message')}`}
               >
                 {generatingMessage ? <LoaderCircle size={12} className="spin" /> : <Sparkles size={12} />}
                 {generatingMessage ? 'Generating' : 'AI'}
