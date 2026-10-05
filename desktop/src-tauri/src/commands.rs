@@ -156,8 +156,11 @@ pub(crate) async fn list_documents() -> Result<Vec<EditorDocument>, String> {
 }
 
 #[tauri::command]
-pub(crate) fn get_dashboard() -> Result<DashboardData, String> {
-    DesktopWorkspace::from_environment()?.dashboard()
+pub(crate) async fn get_dashboard() -> Result<DashboardData, String> {
+    run_background("dashboard snapshot", || {
+        DesktopWorkspace::from_environment()?.dashboard()
+    })
+    .await
 }
 
 #[tauri::command]
@@ -260,8 +263,11 @@ pub(crate) async fn review_episode_series_language(
 }
 
 #[tauri::command]
-pub(crate) fn get_deployment_plan() -> Result<DeploymentPlan, String> {
-    DesktopWorkspace::from_environment()?.deployment_plan()
+pub(crate) async fn get_deployment_plan() -> Result<DeploymentPlan, String> {
+    run_background("deployment plan", || {
+        DesktopWorkspace::from_environment()?.deployment_plan()
+    })
+    .await
 }
 
 #[tauri::command]
