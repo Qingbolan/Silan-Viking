@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { LanguageReviewState } from '../lib/languageReviewWorkflow';
 import { Button } from './ds/Button';
+import { ModalLayer } from './ModalLayer';
 import type {
   DocumentLanguageAudit,
   LanguageAuditCategory,
@@ -26,7 +27,8 @@ type LanguageReviewPanelProps = {
     result: DocumentLanguageAudit,
     finding: LanguageAuditFinding,
   ) => void;
-  onFindingApply: (
+  /** Opens the explicit before/after preview; never edits source by itself. */
+  onFindingPreview: (
     result: DocumentLanguageAudit,
     finding: LanguageAuditFinding,
   ) => void;
@@ -55,26 +57,18 @@ export function LanguageReviewPanel({
   onClose,
   onRetry,
   onFindingOpen,
-  onFindingApply,
+  onFindingPreview,
 }: LanguageReviewPanelProps) {
   if (!state.visible) return null;
   const report = state.report;
 
   return (
-    <div
-      className="dialog-overlay language-review-overlay"
-      role="presentation"
-      onClick={() => {
-        if (state.phase !== 'running') onClose();
-      }}
+    <ModalLayer
+      cardClassName="language-review-card"
+      labelledBy="language-review-title"
+      dismissible={state.phase !== 'running'}
+      onClose={onClose}
     >
-      <section
-        className="dialog-card language-review-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="language-review-title"
-        onClick={(event) => event.stopPropagation()}
-      >
         <header className="language-review-head">
           <div className="new-project-badge"><FileSearch size={17} /></div>
           <div>
@@ -136,6 +130,10 @@ export function LanguageReviewPanel({
               </div>
             </div>
 
+            <p className="language-review-advisory">
+              Findings are advisory. Your source is unchanged; preview a change to edit and save it explicitly.
+            </p>
+
             <div className="language-review-results">
               {report.results.map((result) => (
                 <section className="language-review-document" key={`${result.source_path}:${result.language}`}>
@@ -195,13 +193,14 @@ export function LanguageReviewPanel({
                             </button>
                             <Button
                               type="button"
-                              variant="primary"
+                              variant="secondary"
                               size="sm"
                               disabled={!finding.suggestion.trim()}
-                              onClick={() => onFindingApply(result, finding)}
+                              title="Preview the exact before/after change; nothing is saved until you confirm"
+                              onClick={() => onFindingPreview(result, finding)}
                             >
                               <WandSparkles size={13} />
-                              Apply suggestion
+                              Preview change…
                             </Button>
                           </div>
                         </article>
@@ -236,7 +235,6 @@ export function LanguageReviewPanel({
             </Button>
           </footer>
         )}
-      </section>
-    </div>
+    </ModalLayer>
   );
 }

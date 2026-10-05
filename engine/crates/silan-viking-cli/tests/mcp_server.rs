@@ -202,7 +202,7 @@ fn git_init(content: &Path) {
 }
 
 #[test]
-fn tools_call_capture_creates_a_proposal() {
+fn tools_call_capture_note_writes_agent_memory_directly() {
     let content = fresh_content();
     git_init(&content);
     let responses = drive_server(
@@ -212,6 +212,29 @@ fn tools_call_capture_creates_a_proposal() {
         ],
     );
     let structured = &responses[0]["result"]["structuredContent"];
+    assert_eq!(structured["mode"], "direct");
+    assert!(structured["proposal_id"].is_null());
+    let uri = structured["created_uri"].as_str().expect("created_uri");
+    assert!(uri.starts_with("silan://agent/notes/"));
+    let path = structured["path"].as_str().expect("path");
+    assert!(std::fs::read_to_string(path)
+        .expect("note on disk")
+        .contains("a thought worth keeping"));
+    let _ = std::fs::remove_dir_all(content.parent().expect("root"));
+}
+
+#[test]
+fn tools_call_capture_with_a_content_type_creates_a_proposal() {
+    let content = fresh_content();
+    git_init(&content);
+    let responses = drive_server(
+        &content,
+        &[
+            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"capture","arguments":{"note":"a thought worth keeping","type":"idea"}}}"#,
+        ],
+    );
+    let structured = &responses[0]["result"]["structuredContent"];
+    assert_eq!(structured["mode"], "proposal");
     let proposal_id = structured["proposal_id"].as_str().expect("proposal_id");
     assert!(!proposal_id.is_empty());
     assert!(structured["branch"]

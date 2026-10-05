@@ -119,3 +119,52 @@ fn relations_are_parsed_from_frontmatter() {
         "the project declares one evolved_from relation"
     );
 }
+
+/// Lay down one single-language blog Item; `extra` is appended to its
+/// frontmatter.
+fn write_blog(content: &std::path::Path, slug: &str, id: &str, extra: &str) {
+    let dir = content.join("resources/blog").join(slug);
+    std::fs::create_dir_all(dir.join("parts/body")).expect("mkdir");
+    std::fs::write(dir.join("item.toml"), format!("item_id = \"i_{id}\"\n")).expect("item");
+    std::fs::write(
+        dir.join("parts/body/meta.toml"),
+        format!(
+            "part_id = \"p_{id}\"\ntype = \"body\"\nshape = \"prose\"\ncanonical_lang = \"en\"\n"
+        ),
+    )
+    .expect("meta");
+    std::fs::write(
+        dir.join("parts/body/en.md"),
+        format!(
+            "---\nslug: {slug}\ntitle: T\nkind: blog\ncontent_type: article\nvisibility: private\n{extra}---\n\nBody.\n"
+        ),
+    )
+    .expect("md");
+}
+
+#[test]
+fn seeded_samples_are_not_asked_for_translations() {
+    let root = tempfile::tempdir().expect("temp");
+    let content = root.path().join("content");
+    std::fs::create_dir_all(&content).expect("content");
+    std::fs::copy(fixture_root().join("SCHEMA.md"), content.join("SCHEMA.md")).expect("schema");
+    write_blog(
+        &content,
+        "welcome",
+        "01ARZ3NDEKTSV4RRFFQ69G5FA1",
+        "sample: true\n",
+    );
+    write_blog(&content, "real-post", "01ARZ3NDEKTSV4RRFFQ69G5FA2", "");
+
+    let issues = Workspace::open(&content)
+        .expect("open")
+        .lint(None)
+        .expect("lint");
+
+    let untranslated = issues
+        .iter()
+        .filter(|issue| issue.message.contains("has no translation"))
+        .map(|issue| issue.uri.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(untranslated, ["silan://resources/blog/real-post"]);
+}

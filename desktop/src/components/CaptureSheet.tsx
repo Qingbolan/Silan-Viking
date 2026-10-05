@@ -16,6 +16,8 @@ import {
   X,
 } from 'lucide-react';
 import { LanguageCloseControls } from './LanguageCloseControls';
+import { PaidAiUnavailableHint, usePaidAiGate } from './PaidAiGate';
+import { captureCopy } from '../lib/captureCopy';
 import { Button } from './ds/Button';
 import {
   Dialog,
@@ -40,7 +42,7 @@ import type {
   MarkdownSelectionAssistResult,
 } from '../types';
 
-type CaptureCategoryOption = { value: IdeaCategory; label: string; Icon: typeof Sparkles };
+type CaptureCategoryOption = { value: IdeaCategory; Icon: typeof Sparkles };
 
 type CaptureSheetProps = {
   phase: CapturePhase;
@@ -203,19 +205,33 @@ export function CaptureSheet({
     onAttachFiles([...files]);
     return [];
   }, [onAttachFiles]);
+  const paidAi = usePaidAiGate();
+  const dictation = paidAi.availability('dictation');
+  const selectionAssist = paidAi.availability('selection_edit');
   const requestSelectionAssist = React.useCallback(async (
     request: MarkdownSelectionAssistRequest,
-  ) => invoke<MarkdownSelectionAssistResult>('edit_markdown_selection', {
-    input: {
-      action: request.action,
-      language,
-      title: target === 'moment' ? 'Moment capture' : 'Article draft capture',
-      selected_text: request.selectedText,
-      before_context: request.beforeContext,
-      after_context: request.afterContext,
-      instruction: request.instruction,
-    },
-  }), [language, target]);
+  ) => {
+    if (!await paidAi.confirm({
+      kind: 'selection_edit',
+      action: request.action === 'optimize_expression'
+        ? 'Optimize expression'
+        : request.action === 'agent_edit' ? 'Agent local edit' : 'Comment issue',
+      scope: 'the selected passage with up to 1,600 characters of context on each side',
+    })) {
+      throw new Error('Cancelled · nothing was sent');
+    }
+    return invoke<MarkdownSelectionAssistResult>('edit_markdown_selection', {
+      input: {
+        action: request.action,
+        language,
+        title: target === 'moment' ? 'Moment capture' : 'Article draft capture',
+        selected_text: request.selectedText,
+        before_context: request.beforeContext,
+        after_context: request.afterContext,
+        instruction: request.instruction,
+      },
+    });
+  }, [language, paidAi, target]);
 
   const clearRecordingTimers = () => {
     if (recordingDeadlineRef.current !== null) window.clearTimeout(recordingDeadlineRef.current);
@@ -359,12 +375,11 @@ export function CaptureSheet({
   };
 
   const isChinese = language === 'zh';
-  const documentTitle = target === 'moment'
-    ? (isChinese ? '未命名事件' : 'Untitled moment')
-    : (isChinese ? '未命名文章' : 'Untitled article');
+  const copy = captureCopy(language);
+  const documentTitle = target === 'moment' ? copy.untitledMoment : copy.untitledArticle;
   const videos = attachments.filter(isVideoFile);
   const coversReady = videos.every(file => covers.get(file)?.status === 'ready');
-  const editedLabel = isChinese ? '刚刚编辑' : 'Edited just now';
+  const editedLabel = copy.editedJustNow;
 
   return (
     <section
@@ -387,7 +402,7 @@ export function CaptureSheet({
       } as React.CSSProperties}
     >
       <header className="capture-header">
-        <nav className="capture-mode-tabs" role="tablist" aria-label="快速书写模式">
+        <nav className="capture-mode-tabs" role="tablist" aria-label={copy.modeTabsLabel}>
           <button
             type="button"
             role="tab"
@@ -396,7 +411,7 @@ export function CaptureSheet({
             onClick={() => onTargetChange('blog')}
             disabled={phase === 'submitting' || sourceCreated}
           >
-            快速写文章
+            {copy.blogTab}
           </button>
           <button
             type="button"
@@ -406,7 +421,7 @@ export function CaptureSheet({
             onClick={() => onTargetChange('moment')}
             disabled={phase === 'submitting' || sourceCreated}
           >
-            记录事件
+            {copy.momentTab}
           </button>
         </nav>
         <LanguageCloseControls
@@ -438,7 +453,7 @@ export function CaptureSheet({
             <h1 id="capture-document-title">
               <input
                 className="capture-title-input"
-                aria-label={isChinese ? '标题' : 'Title'}
+                aria-label={copy.titleLabel}
                 value={title}
                 placeholder={documentTitle}
                 disabled={phase === 'submitting'}
@@ -468,8 +483,8 @@ export function CaptureSheet({
 
           {target !== 'moment' && (
             <div className="capture-categories" role="radiogroup" aria-label="Content category">
-              <span className="capture-categories__label" aria-hidden="true">{isChinese ? '文章意图' : 'Article intent'}</span>
-              {categories.map(({ value, label, Icon }) => (
+              <span className="capture-categories__label" aria-hidden="true">{copy.articleIntent}</span>
+              {categories.map(({ value, Icon }) => (
                 <button
                   type="button"
                   role="radio"
@@ -480,7 +495,7 @@ export function CaptureSheet({
                   disabled={phase === 'submitting'}
                 >
                   <Icon size={15} />
-                  {label}
+                  {copy.categories[value]}
                 </button>
               ))}
             </div>
@@ -494,13 +509,12 @@ export function CaptureSheet({
               toolbarVisible
               slashCommands={editorAssist.slashCommands}
               onImportImages={importCaptureImages}
-              ariaLabel={target === 'moment' ? '事件内容' : '文章草稿'}
-              placeholder={target === 'moment'
-                ? (isChinese ? '记录这一刻，或将视频、图片拖到这里… 输入 / 插入内容' : 'Write about this moment, or drop videos and photos here…')
-                : '先把文章草稿写下来... 输入 / 插入结构块，[[ 连接已有内容'}
+              ariaLabel={target === 'moment' ? copy.momentEditorLabel : copy.articleEditorLabel}
+              placeholder={target === 'moment' ? copy.momentPlaceholder : copy.articlePlaceholder}
               onChange={onNoteChange}
               onKeyDown={onKeyDown}
               onSelectionAssist={requestSelectionAssist}
+              selectionAssistDisabledReason={selectionAssist.reason}
             />
             {editorAssist.fileInput}
           </div>
@@ -525,6 +539,7 @@ export function CaptureSheet({
             </section>
           )}
 
+          <PaidAiUnavailableHint kind="dictation" className="capture-ai-hint" />
           {(error || voiceError) && (
             <div className="capture-error" role="alert">
               <AlertCircle size={15} />
@@ -539,17 +554,19 @@ export function CaptureSheet({
           type="button"
           onClick={editorAssist.openFilePicker}
           disabled={phase === 'submitting'}
-          title={isChinese ? '添加图片或视频' : 'Add photos or videos'}
+          title={copy.addMediaTitle}
         >
           <Paperclip size={16} />
-          {isChinese ? '图片 / 视频' : 'Photos / videos'}
+          {copy.addMedia}
         </button>
         <button
           type="button"
           className={voicePhase === 'recording' ? 'recording' : ''}
           onClick={toggleVoiceInput}
-          disabled={phase === 'submitting' || voicePhase === 'transcribing'}
-          title={voicePhase === 'recording' ? 'Stop recording' : 'Voice input'}
+          disabled={phase === 'submitting' || voicePhase === 'transcribing' || (voicePhase === 'idle' && !dictation.enabled)}
+          title={voicePhase === 'recording'
+            ? 'Stop recording'
+            : dictation.reason || 'Voice input · transcribed by OpenAI'}
         >
           {voicePhase === 'transcribing'
             ? <LoaderCircle size={16} />
@@ -565,14 +582,14 @@ export function CaptureSheet({
                   <span>{recordingSeconds}s / 60s</span>
                 </span>
               )
-              : 'Dictate'}
+              : `Dictate · ${paidAi.providerLabel('dictation')}`}
         </button>
         <button
           type="button"
           className="capture-confirm"
           disabled={(!title.trim() && !note.trim() && attachments.length === 0) || phase === 'submitting' || voicePhase !== 'idle' || (target === 'moment' && !coversReady)}
           onClick={onSubmit}
-          title={target === 'moment' ? '记录事件' : '保存文章草稿'}
+          title={target === 'moment' ? copy.saveMomentTitle : copy.saveArticleTitle}
         >
           {phase === 'submitting' ? <LoaderCircle size={16} /> : <Check size={16} />}
           {phase === 'submitting' ? 'Saving' : 'Confirm'}

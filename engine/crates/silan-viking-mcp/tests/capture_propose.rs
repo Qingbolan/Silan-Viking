@@ -54,28 +54,104 @@ fn fresh_repo(tag: &str) -> PathBuf {
     root
 }
 
+fn expect_proposal(captured: silan_viking_mcp::Captured) -> silan_viking_mcp::ProposalCreated {
+    match captured {
+        silan_viking_mcp::Captured::Proposal(created) => created,
+        other => panic!("a content kind must open a proposal, got {other:?}"),
+    }
+}
+
 #[test]
-fn capture_creates_a_proposal_branch_without_touching_main() {
+fn capture_note_writes_private_agent_memory_directly() {
+    // Contract: agent/ is the agent's own memory — a note is written
+    // directly, with no proposal branch and no movement of main.
     let root = fresh_repo("capture");
     let main_before = git(&root, &["rev-parse", "main"]);
+    let branches_before = git(&root, &["branch", "--list"]);
 
-    let created = silan_viking_mcp::capture(&root, "a quick idea worth keeping", None, None, None)
-        .expect("capture succeeds");
+    for kind in [None, Some("note")] {
+        let captured =
+            silan_viking_mcp::capture(&root, "a quick idea worth keeping", kind, None, None)
+                .expect("capture succeeds");
+        let silan_viking_mcp::Captured::Note { uri, path } = captured else {
+            panic!("a note must be a direct agent write");
+        };
+        assert!(uri.starts_with("silan://agent/notes/"), "{uri}");
+        assert!(
+            path.starts_with(root.join("agent/notes")),
+            "{}",
+            path.display()
+        );
+        let written = std::fs::read_to_string(&path).expect("note on disk");
+        assert!(written.contains("a quick idea worth keeping"));
+    }
 
-    // A proposal branch exists and main is unchanged (#10 invariant).
-    let branches = git(&root, &["branch", "--list"]);
-    assert!(
-        branches.contains(&created.branch),
-        "branch `{}` should exist: {branches}",
-        created.branch
+    assert_eq!(git(&root, &["rev-parse", "main"]), main_before);
+    assert_eq!(
+        git(&root, &["branch", "--list"]),
+        branches_before,
+        "a note must not open a proposal branch"
     );
-    let main_after = git(&root, &["rev-parse", "main"]);
-    assert_eq!(main_before, main_after, "capture must not move main");
 
-    // The note is on the proposal branch, under agent/notes/.
-    let note_path = format!("agent/notes/{}.md", created.id);
-    let on_branch = git(&root, &["show", &format!("{}:{note_path}", created.branch)]);
-    assert!(on_branch.contains("a quick idea worth keeping"));
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn capture_content_kind_never_writes_resources_directly() {
+    // Contract: anything under resources/ goes through a proposal — the
+    // working tree and main stay untouched.
+    let root = fresh_repo("capture-blog");
+    let main_before = git(&root, &["rev-parse", "main"]);
+
+    let created = expect_proposal(
+        silan_viking_mcp::capture(
+            &root,
+            "notes on writing for agents",
+            Some("blog"),
+            Some("writing-for-agents"),
+            None,
+        )
+        .expect("capture(type=blog) succeeds"),
+    );
+
+    assert!(created.branch.starts_with("proposal/"));
+    assert_eq!(git(&root, &["rev-parse", "main"]), main_before);
+    assert!(
+        !root.join("resources/blog/writing-for-agents").exists(),
+        "a content capture must not land in the working tree"
+    );
+    assert!(git(&root, &["status", "--porcelain"]).is_empty());
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn propose_refuses_a_target_that_is_not_committed() {
+    // Item 6: an Item that exists only in the working tree cannot be
+    // proposed — main lacks its item.toml, so accept would stay blocked.
+    let root = fresh_repo("propose-uncommitted");
+    let item = root.join("resources/projects/gem-bench");
+    copy_dir(&root.join("resources/projects/sample-project"), &item);
+
+    let error = match silan_viking_mcp::propose(
+        &root,
+        "silan://resources/projects/gem-bench/overview",
+        Some("a draft"),
+        "en",
+        &[],
+    ) {
+        Ok(created) => panic!("uncommitted target must be refused, got {}", created.id),
+        Err(error) => error.to_string(),
+    };
+    assert!(error.contains("commit your changes"), "{error}");
+    assert!(
+        error.contains("resources/projects/gem-bench/item.toml"),
+        "{error}"
+    );
+    assert!(
+        !git(&root, &["branch", "--list"]).contains("proposal/"),
+        "no proposal branch may be created"
+    );
 
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -87,14 +163,16 @@ fn capture_with_kind_idea_scaffolds_an_item_under_resources() {
     // fix it must open a real Item under silan://resources/ideas/<slug>/.
     let root = fresh_repo("capture-idea");
 
-    let created = silan_viking_mcp::capture(
-        &root,
-        "use io_uring to write a portable embedded KV store",
-        Some("idea"),
-        None,
-        None,
-    )
-    .expect("capture(type=idea) succeeds");
+    let created = expect_proposal(
+        silan_viking_mcp::capture(
+            &root,
+            "use io_uring to write a portable embedded KV store",
+            Some("idea"),
+            None,
+            None,
+        )
+        .expect("capture(type=idea) succeeds"),
+    );
 
     // The created_uri points at the new Item, not at agent/notes/.
     let uri = created.created_uri.expect("created_uri is present");

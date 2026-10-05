@@ -47,6 +47,13 @@ fn main() {
 /// the verb listings in `print_help` — there is no auto-sync.
 fn command_usage(command: &str) -> Option<&'static [&'static str]> {
     Some(match command {
+        "init" => &[
+            "init [--project <name>] [--name <full name>] [--title <title>] [--email <address>]",
+            "init                # omitted values are prompted on a terminal, defaulted otherwise",
+        ],
+        "guide" => &["guide        show the next step for the current project"],
+        "doctor" => &["doctor       scan content and the query index, report counts"],
+        "tags" => &["tags [--type blog|project|episode|resume|moment]"],
         "blog" => &[
             "blog new|list|show|edit|archive|rm <slug>",
             "blog convert-to-moment <slug>",
@@ -99,12 +106,13 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
         "index" => &["index sync|status|lint|rebuild"],
         "content" => &[
             "content tree|ls|show <uri>",
-            "content lint [<uri>] · content lint --drift",
+            "content lint [<uri>] [--verbose] · content lint --drift",
         ],
         "relation" => &[
             "relation graph",
             "relation show <uri>",
             "relation link <from> <to> --type <kind>",
+            "    kinds: evolved_into, evolved_from, documents, references, supersedes, part_of",
         ],
         "proposal" => &[
             "proposal list|show|accept|reject <id>",
@@ -120,7 +128,8 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
         ],
         "stats" => &[
             "stats sync <uri>",
-            "stats show|visitors|crawlers|sources <uri>",
+            "stats show|crawlers|sources <uri>",
+            "stats visitors <uri> [--show-network]",
         ],
         "desktop" | "destop" => &["desktop", "desktop dev"],
         "onboard" | "setup" => &[
@@ -229,7 +238,10 @@ fn run(args: Vec<String>) -> Result<(), String> {
     let opts = CliOptions::parse(&args)?;
     let command = opts.command.iter().map(String::as_str).collect::<Vec<_>>();
     match command.as_slice() {
-        ["init"] => init_content(&opts.content_root),
+        ["init", flags @ ..] => {
+            let profile = InitProfile::resolve(flags)?;
+            init_content(&opts.content_root, &profile)
+        }
         ["guide"] => guide(&opts.content_root, false),
         ["onboard", flags @ ..] | ["setup", flags @ ..] => {
             run_onboarding(&opts.content_root, &opts.db_path, &opts.out_dir, flags)
@@ -348,9 +360,25 @@ fn run(args: Vec<String>) -> Result<(), String> {
         //   `content lint <uri>`   — same, scoped to one Item
         //   `content lint --drift` — doc / schema drift self-check; dev-only,
         //                            shells out to engine/scripts/check_docs_drift.py
-        ["content", "lint"] => content_lint(&opts.content_root, None),
         ["content", "lint", "--drift"] => content_lint_drift(),
-        ["content", "lint", uri] => content_lint(&opts.content_root, Some(uri)),
+        ["content", "lint", rest @ ..] => {
+            let verbose = rest.iter().any(|arg| matches!(*arg, "--verbose" | "-v"));
+            match rest
+                .iter()
+                .filter(|arg| !matches!(**arg, "--verbose" | "-v"))
+                .collect::<Vec<_>>()
+                .as_slice()
+            {
+                [] => content_lint(&opts.content_root, None, verbose),
+                [uri] if !uri.starts_with('-') => {
+                    content_lint(&opts.content_root, Some(uri), verbose)
+                }
+                other => Err(format!(
+                    "content lint: unexpected argument `{}` · usage: silan content lint [<uri>] [--verbose] · silan content lint --drift",
+                    other.iter().map(|arg| **arg).collect::<Vec<_>>().join(" ")
+                )),
+            }
+        }
         ["cover", "find", rest @ ..] => cover::find(&opts.content_root, rest),
         ["cover", "generate", target_uri, rest @ ..] => {
             cover::generate(&opts.content_root, &opts.db_path, target_uri, rest)
@@ -365,7 +393,8 @@ fn run(args: Vec<String>) -> Result<(), String> {
         // (matches `<type> list` for content); behaves identically to graph.
         ["relation", "graph"] | ["relation", "list"] => relation_graph(&opts.content_root),
         ["relation", "show", uri] => relation_show(&opts.content_root, uri),
-        ["relation", "link", from, to, "--type", kind] => {
+        ["relation", "link", rest @ ..] => {
+            let (from, to, kind) = parse_relation_link_args(rest)?;
             relation_link(&opts.content_root, &opts.db_path, from, to, kind)
         }
         ["skill", "emit"] => skill::emit(&opts.content_root, &skill::default_skill_dir()),
@@ -549,7 +578,17 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["proposal", "create", rest @ ..] => proposal_create(&opts.content_root, rest),
         ["stats", "sync", uri] => stats_sync(&opts.content_root, &opts.db_path, uri),
         ["stats", "show", uri] => stats_show(&opts.db_path, uri),
-        ["stats", "visitors", uri] => stats_visitors(&opts.db_path, uri),
+        ["stats", "visitors", uri] => stats_visitors(
+            &opts.db_path,
+            uri,
+            silan_viking_app::VisitorDisclosure::Anonymous,
+        ),
+        ["stats", "visitors", uri, "--show-network"]
+        | ["stats", "visitors", "--show-network", uri] => stats_visitors(
+            &opts.db_path,
+            uri,
+            silan_viking_app::VisitorDisclosure::Network,
+        ),
         ["stats", "crawlers", uri] => stats_crawlers(&opts.db_path, uri),
         ["stats", "sources", uri] => stats_sources(&opts.db_path, uri),
         // `mcp serve [--stdio]` accepts gate flags in any order after the
@@ -645,6 +684,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
                     }
                 }
             }
+            require_deploy_section(&opts.content_root, "site update-content")?;
             run_content_release(&opts.content_root, &opts.db_path, confirm)
         }
         ["site", "rollback"] => site_rollback(&opts.content_root, &opts.db_path),
@@ -1078,23 +1118,126 @@ fn print_help(content_root: &Path) {
     );
 }
 
+/// The project name and owner identity `silan init` seeds into
+/// `silan-viking.toml` and the resume Item.
+///
+/// Values come from `--project/--name/--title/--email`; any flag left out is
+/// prompted for when stdin is a terminal, and otherwise takes the fixed
+/// default below so scripted and test runs stay deterministic.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct InitProfile {
+    project: String,
+    full_name: String,
+    title: String,
+    email: String,
+}
+
+impl InitProfile {
+    const FLAGS: &'static str =
+        "--project <name> · --name <full name> · --title <title> · --email <address>";
+
+    fn resolve(flags: &[&str]) -> Result<Self, String> {
+        use std::io::IsTerminal;
+
+        let given = Self::parse_flags(flags)?;
+        let interactive = io::stdin().is_terminal();
+        let field = |value: Option<String>, label: &str, default: &str| match value {
+            Some(value) => Ok(value),
+            None if interactive => prompt_with_default(label, default),
+            None => Ok(default.to_owned()),
+        };
+        Ok(Self {
+            project: field(given[0].clone(), "Project name", "silan-site")?,
+            full_name: field(given[1].clone(), "Your full name", "Example User")?,
+            title: field(given[2].clone(), "Your title", "AI Researcher / Engineer")?,
+            email: field(given[3].clone(), "Contact email (optional)", "")?,
+        })
+    }
+
+    /// `[project, name, title, email]`, each `None` when not passed.
+    fn parse_flags(flags: &[&str]) -> Result<[Option<String>; 4], String> {
+        let mut values: [Option<String>; 4] = Default::default();
+        let mut index = 0;
+        while index < flags.len() {
+            let (flag, inline) = match flags[index].split_once('=') {
+                Some((flag, value)) => (flag, Some(value.to_owned())),
+                None => (flags[index], None),
+            };
+            let slot = match flag {
+                "--project" => 0,
+                "--name" => 1,
+                "--title" => 2,
+                "--email" => 3,
+                other => {
+                    return Err(format!(
+                        "init: unknown argument `{other}` · accepted: {}",
+                        Self::FLAGS
+                    ))
+                }
+            };
+            let value = match inline {
+                Some(value) => value,
+                None => {
+                    index += 1;
+                    flags
+                        .get(index)
+                        .filter(|value| !value.starts_with("--"))
+                        .map(|value| (*value).to_owned())
+                        .ok_or_else(|| {
+                            format!("init: `{flag}` needs a value · accepted: {}", Self::FLAGS)
+                        })?
+                }
+            };
+            if value.contains(['"', '\\', '\n']) {
+                return Err(format!(
+                    "init: `{flag}` must not contain quotes, backslashes or newlines"
+                ));
+            }
+            values[slot] = Some(value.trim().to_owned());
+            index += 1;
+        }
+        Ok(values)
+    }
+}
+
+fn prompt_with_default(label: &str, default: &str) -> Result<String, String> {
+    if default.is_empty() {
+        print!("{label}: ");
+    } else {
+        print!("{label} [{default}]: ");
+    }
+    io::Write::flush(&mut io::stdout()).map_err(|error| error.to_string())?;
+    let mut answer = String::new();
+    io::stdin()
+        .read_line(&mut answer)
+        .map_err(|error| error.to_string())?;
+    let answer = answer.trim();
+    Ok(if answer.is_empty() { default } else { answer }.to_owned())
+}
+
 /// The default `silan-viking.toml` project config (`06` §6.2.2).
-fn default_config(content_dir: &str) -> String {
+fn default_config(content_dir: &str, profile: &InitProfile) -> String {
+    let InitProfile {
+        project,
+        full_name,
+        title,
+        email,
+    } = profile;
     format!(
         "# silan-viking.toml — project config (per docs/silan-viking/06 §6.2.2).\n\
          # Required sections: [project], [database]. [deploy] is needed only\n\
          # for `silan site deploy`; [identity]/[mcp] may be omitted.\n\
          \n\
          [project]\n\
-         name        = \"silan-site\"\n\
+         name        = \"{project}\"\n\
          content_dir = \"{content_dir}\"\n\
          \n\
          [identity]\n\
          # Seeds content/resources/resume/parts/summary/en.md on `init`;\n\
          # after that, edit that file — it is the truth source, this is not.\n\
-         full_name = \"Example User\"\n\
-         title     = \"AI Researcher / Engineer\"\n\
-         email     = \"example@example.com\"\n\
+         full_name = \"{full_name}\"\n\
+         title     = \"{title}\"\n\
+         email     = \"{email}\"\n\
          location  = \"\"\n\
          \n\
          [database]\n\
@@ -1137,7 +1280,7 @@ fn default_config(content_dir: &str) -> String {
 /// single `resume` Item seeded from `[identity]`, and a Git repo over
 /// `content/` with a first commit (`06` §6.2: `content/` is the proposal Git
 /// repo, so `init` must `git init` + commit).
-fn init_content(content_root: &Path) -> Result<(), String> {
+fn init_content(content_root: &Path, profile: &InitProfile) -> Result<(), String> {
     fs::create_dir_all(content_root.join("resources")).map_err(|e| e.to_string())?;
     fs::create_dir_all(content_root.join("agent/notes")).map_err(|e| e.to_string())?;
 
@@ -1155,7 +1298,7 @@ fn init_content(content_root: &Path) -> Result<(), String> {
     let project_root = content_root.parent().unwrap_or(content_root);
     let config = project_root.join("silan-viking.toml");
     if !config.exists() {
-        fs::write(&config, default_config(content_dir_name)).map_err(|e| e.to_string())?;
+        fs::write(&config, default_config(content_dir_name, profile)).map_err(|e| e.to_string())?;
     }
 
     // .gitignore — keep derived caches out of the content Git repo.
@@ -1173,36 +1316,49 @@ fn init_content(content_root: &Path) -> Result<(), String> {
     // with "parsed item has no language variant".
     let resume_summary = content_root.join("resources/resume/parts/summary");
     if !resume_summary.exists() {
-        scaffold::new_resume(content_root, "Example User", "AI Researcher / Engineer")
-            .map_err(|e| e.to_string())?;
+        scaffold::new_resume(
+            content_root,
+            &profile.full_name,
+            &profile.title,
+            Some(profile.email.as_str()).filter(|email| !email.is_empty()),
+        )
+        .map_err(|e| e.to_string())?;
     }
 
-    // The content-type directories (`06` §6.2.1). `episode` / `moment`
-    // stay empty collections — no seed item, just the directory so the
-    // collection exists. `blog` / `projects` each get one seed item below;
-    // `resume` is already scaffolded above.
-    for type_dir in ["blog", "projects", "episode", "moment"] {
-        fs::create_dir_all(content_root.join("resources").join(type_dir))
-            .map_err(|e| e.to_string())?;
-    }
-
-    // Seed items: a welcome blog and one project. Skipped if a same-slug item
-    // already exists, so `init` over a non-empty content/ does not clobber
-    // real content.
+    // Seed items: a welcome blog and one project, marked `sample: true` so
+    // lint does not report their missing translations forever. Skipped if a
+    // same-slug item already exists, so `init` over a non-empty content/
+    // does not clobber real content.
     for (kind, slug) in [("blog", "welcome"), ("project", "first-project")] {
         let item_dir = content_root
             .join("resources")
             .join(scaffold::type_dir_name(kind).map_err(|e| e.to_string())?)
             .join(slug);
         if !item_dir.exists() {
-            scaffold::new_item(content_root, kind, slug).map_err(|e| e.to_string())?;
+            scaffold::new_sample_item(content_root, kind, slug).map_err(|e| e.to_string())?;
+        }
+    }
+
+    // The content-type directories (`06` §6.2.1). `episode` / `moment`
+    // stay empty collections. Git does not track empty directories, so an
+    // empty collection gets a `.gitkeep`: every release scope folder is then
+    // a tracked path and Git pathspecs naming it stay valid.
+    for type_dir in ["blog", "projects", "episode", "moment"] {
+        let dir = content_root.join("resources").join(type_dir);
+        fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        let is_empty = fs::read_dir(&dir)
+            .map_err(|e| e.to_string())?
+            .next()
+            .is_none();
+        if is_empty {
+            fs::write(dir.join(".gitkeep"), []).map_err(|e| e.to_string())?;
         }
     }
 
     // `git init` over `content/` + first commit (`06` §6.2 step 3). The
     // proposal mechanism (`03` §3.1) needs `content/` to be a Git repo, so
     // `init` must establish it. Exit code 2 if `git` is unavailable.
-    git_init_content(content_root)?;
+    git_init_content(content_root, profile)?;
 
     println!("initialized {}", content_root.display());
     println!("  schema  {}", schema.display());
@@ -1219,18 +1375,11 @@ fn init_content(content_root: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// The default Git author for the `content/` repo (`06` §6.2). Persisted into
-/// the repo's own `git config` at `init`, so every later commit — the
-/// proposal merge commit (`03` §3.1 accept), `ctx_write`, `reflect` — carries
-/// it without each call passing `-c`.
-const DEFAULT_GIT_NAME: &str = "Silan.Hu";
-const DEFAULT_GIT_EMAIL: &str = "silan.hu@u.nus.edu";
-
-/// Run `git init` over `content/`, set the default identity, and make the
-/// first commit — unless the directory is already a Git repo. A missing `git`
-/// binary exits with code 2 (`06` §6.8: environment error), distinct from a
-/// code-1 user error.
-fn git_init_content(content_root: &Path) -> Result<(), String> {
+/// Run `git init` over `content/`, make sure commits have an author, and make
+/// the first commit — unless the directory is already a Git repo. A missing
+/// `git` binary exits with code 2 (`06` §6.8: environment error), distinct
+/// from a code-1 user error.
+fn git_init_content(content_root: &Path, profile: &InitProfile) -> Result<(), String> {
     let git = |args: &[&str]| -> Result<(), String> {
         let status = match Command::new("git")
             .args(args)
@@ -1251,47 +1400,58 @@ fn git_init_content(content_root: &Path) -> Result<(), String> {
     };
 
     // An already-initialized repo (e.g. `init --here` on a clone): don't
-    // re-init or re-commit, but still ensure the default identity is set so
-    // the proposal merge commit has an author.
+    // re-init or re-commit, but still ensure an identity exists so the
+    // proposal merge commit has an author.
     if content_root.join(".git").is_dir() {
-        git_ensure_identity(content_root);
+        git_ensure_identity(content_root, profile);
         return Ok(());
     }
 
     // `-b main`: the proposal plane (`03` §3.1) advances the `main` branch
     // ref, so the repo must be born on `main`, not the git default.
     git(&["init", "--quiet", "-b", "main"])?;
-    // Persist the default identity into the repo config so every commit the
-    // engine makes later (proposal merge, ctx_write, reflect) is attributed.
-    git(&["config", "user.name", DEFAULT_GIT_NAME])?;
-    git(&["config", "user.email", DEFAULT_GIT_EMAIL])?;
+    let (name, email) = git_ensure_identity(content_root, profile);
     git(&["add", "-A"])?;
     git(&["commit", "--quiet", "-m", "chore: silan init"])?;
-    println!("  git     initialized content/ repo ({DEFAULT_GIT_NAME} <{DEFAULT_GIT_EMAIL}>)");
+    println!("  git     initialized content/ repo ({name} <{email}>)");
     Ok(())
 }
 
-/// Set the default Git identity on an existing `content/` repo, but only for
-/// keys that are not already configured — never override an identity the
-/// owner set themselves.
-fn git_ensure_identity(content_root: &Path) {
-    for (key, default) in [
-        ("user.name", DEFAULT_GIT_NAME),
-        ("user.email", DEFAULT_GIT_EMAIL),
-    ] {
-        let configured = Command::new("git")
-            .args(["config", "--local", key])
+/// Make sure every commit the engine makes later (proposal merge, ctx_write,
+/// reflect) has an author. The owner's own Git identity always wins; only a
+/// missing key is filled from the `init` profile and persisted to the repo
+/// config. Returns the effective identity.
+fn git_ensure_identity(content_root: &Path, profile: &InitProfile) -> (String, String) {
+    let effective = |key: &str| {
+        Command::new("git")
+            .args(["config", key])
             .current_dir(content_root)
             .output()
-            .map(|o| o.status.success() && !o.stdout.is_empty())
-            .unwrap_or(false);
-        if !configured {
+            .ok()
+            .filter(|o| o.status.success())
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+            .filter(|value| !value.is_empty())
+    };
+    let fallback_email = format!("{}@users.noreply.localhost", profile.project);
+    let fallbacks = [
+        ("user.name", profile.full_name.trim()),
+        (
+            "user.email",
+            Some(profile.email.trim())
+                .filter(|email| !email.is_empty())
+                .unwrap_or(&fallback_email),
+        ),
+    ];
+    let [name, email] = fallbacks.map(|(key, fallback)| {
+        effective(key).unwrap_or_else(|| {
             let _ = Command::new("git")
-                .args(["config", key, default])
+                .args(["config", key, fallback])
                 .current_dir(content_root)
                 .status();
-        }
-    }
+            fallback.to_owned()
+        })
+    });
+    (name, email)
 }
 
 fn doctor(content_root: &Path) -> Result<(), String> {
@@ -1630,7 +1790,7 @@ fn run_onboarding(
                     if !prompt_yes_no("No project found. Initialise it now?", true)? {
                         return Err("onboarding stopped before project initialisation".to_owned());
                     }
-                    init_content(content_root)?;
+                    init_content(content_root, &InitProfile::resolve(&[])?)?;
                 } else {
                     println!("Project configuration found.");
                 }
@@ -1801,25 +1961,56 @@ fn content_show(content_root: &Path, uri: &str) -> Result<(), String> {
 /// `Workspace::lint` for the per-Item validate() chain (parser dispatch +
 /// per-type validation). `fatal` issues exit non-zero; `warn` / `info`
 /// print but succeed, so this command works as a CI gate.
-fn content_lint(content_root: &Path, uri: Option<&str>) -> Result<(), String> {
+fn content_lint(content_root: &Path, uri: Option<&str>, verbose: bool) -> Result<(), String> {
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
     let issues = ws.lint(uri).map_err(|e| e.to_string())?;
-    if issues.is_empty() {
-        println!("ok — 0 lint issues");
-        return Ok(());
-    }
-    let mut fatals = 0usize;
-    for issue in &issues {
-        println!("{:<5} {}  {}", issue.level, issue.uri, issue.message);
-        if issue.level == "fatal" {
-            fatals += 1;
-        }
-    }
-    println!("\n{} issue(s); {fatals} fatal", issues.len());
+    let (report, fatals) = render_lint_report(&issues, verbose);
+    print!("{report}");
     if fatals > 0 {
         return Err(format!("{fatals} fatal lint issue(s)"));
     }
     Ok(())
+}
+
+/// Render lint issues grouped by severity (fatal, warn, info), each group
+/// headed by its count. Informational issues — chiefly untranslated parts —
+/// are collapsed to their count unless `verbose`, so real problems are not
+/// buried. The closing `N issue(s); M fatal` line is a stable contract.
+/// Returns the text and the fatal count.
+fn render_lint_report(issues: &[silan_viking_app::LintIssue], verbose: bool) -> (String, usize) {
+    use std::fmt::Write as _;
+
+    if issues.is_empty() {
+        return ("ok — 0 lint issues\n".to_owned(), 0);
+    }
+    let mut out = String::new();
+    let fatals = issues.iter().filter(|i| i.level == "fatal").count();
+    for level in ["fatal", "warn", "info"] {
+        let group = issues
+            .iter()
+            .filter(|i| i.level == level)
+            .collect::<Vec<_>>();
+        if group.is_empty() {
+            continue;
+        }
+        let _ = writeln!(out, "{level} ({})", group.len());
+        if level == "info" && !verbose {
+            let _ = writeln!(out, "  (collapsed — run with --verbose to list them)");
+            continue;
+        }
+        for issue in group {
+            let _ = writeln!(out, "  {}  {}", issue.uri, issue.message);
+        }
+    }
+    // Any level outside the known three is still shown, never dropped.
+    for issue in issues
+        .iter()
+        .filter(|i| !matches!(i.level.as_str(), "fatal" | "warn" | "info"))
+    {
+        let _ = writeln!(out, "{:<5} {}  {}", issue.level, issue.uri, issue.message);
+    }
+    let _ = writeln!(out, "\n{} issue(s); {fatals} fatal", issues.len());
+    (out, fatals)
 }
 
 /// `content lint --drift` — run the §17.4 doc-drift self-check. The
@@ -2024,6 +2215,66 @@ fn relation_link(
     Ok(())
 }
 
+/// Parse `relation link <from> <to> --type <kind>` (also `--type=<kind>`),
+/// naming exactly which argument is missing or unexpected.
+fn parse_relation_link_args<'a>(args: &[&'a str]) -> Result<(&'a str, &'a str, &'a str), String> {
+    const USAGE: &str = "usage: silan relation link <from-uri> <to-uri> --type <kind>";
+    let mut positional = Vec::new();
+    let mut kind = None;
+    let mut index = 0;
+    while index < args.len() {
+        match args[index] {
+            "--type" => {
+                index += 1;
+                let value = args
+                    .get(index)
+                    .copied()
+                    .filter(|value| !value.starts_with("--"))
+                    .ok_or_else(|| {
+                        format!(
+                            "relation link: `--type` needs a value — one of: {} · {USAGE}",
+                            relation_type_names()
+                        )
+                    })?;
+                kind = Some(value);
+            }
+            flag if flag.starts_with("--type=") => kind = Some(&flag["--type=".len()..]),
+            flag if flag.starts_with("--") => {
+                return Err(format!("relation link: unknown flag `{flag}` · {USAGE}"));
+            }
+            value => positional.push(value),
+        }
+        index += 1;
+    }
+    let kind = kind.ok_or_else(|| {
+        format!(
+            "relation link: missing `--type <kind>` — one of: {} · {USAGE}",
+            relation_type_names()
+        )
+    })?;
+    match positional.as_slice() {
+        [from, to] => {
+            parse_relation_type(kind)?;
+            Ok((from, to, kind))
+        }
+        [] | [_] => Err(format!(
+            "relation link: expected both <from-uri> and <to-uri> · {USAGE}"
+        )),
+        extra => Err(format!(
+            "relation link: unexpected argument `{}` · {USAGE}",
+            extra[2..].join(" ")
+        )),
+    }
+}
+
+fn relation_type_names() -> String {
+    silan_viking_app::RelationType::ALL
+        .iter()
+        .map(|t| t.as_str())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 fn parse_relation_type(kind: &str) -> Result<silan_viking_app::RelationType, String> {
     use silan_viking_app::RelationType;
 
@@ -2034,11 +2285,7 @@ fn parse_relation_type(kind: &str) -> Result<silan_viking_app::RelationType, Str
         .ok_or_else(|| {
             format!(
                 "unknown relation type `{kind}` — allowed: {}",
-                RelationType::ALL
-                    .iter()
-                    .map(|t| t.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                relation_type_names()
             )
         })
 }
@@ -2460,23 +2707,42 @@ fn stats_show(db_path: &Path, uri: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn stats_visitors(db_path: &Path, uri: &str) -> Result<(), String> {
+fn stats_visitors(
+    db_path: &Path,
+    uri: &str,
+    disclosure: silan_viking_app::VisitorDisclosure,
+) -> Result<(), String> {
     let filter = stats_filter_for(db_path, uri)?;
     let cache = silan_viking_app::StatsCache::open(db_path);
     let visitors = cache
-        .visitors(&filter.entity_type, &filter.entity_id)
+        .visitors(&filter.entity_type, &filter.entity_id, disclosure)
         .map_err(|e| e.to_string())?;
     if visitors.is_empty() {
         println!("no cached visitors — run `silan stats sync {uri}` first");
         return Ok(());
     }
-    for v in visitors {
-        println!(
-            "{}\t{}\t{}\t{}\t{}",
-            v.fingerprint, v.ip_masked, v.visitor_kind, v.referrer_kind, v.last_seen_at
-        );
+    for v in &visitors {
+        println!("{}", visitor_line(v, disclosure));
     }
     Ok(())
+}
+
+/// One tab-separated `stats visitors` line. The masked network address is
+/// a column only when the owner asked for network detail.
+fn visitor_line(
+    v: &silan_viking_app::VisitorRow,
+    disclosure: silan_viking_app::VisitorDisclosure,
+) -> String {
+    match disclosure {
+        silan_viking_app::VisitorDisclosure::Anonymous => format!(
+            "{}\t{}\t{}\t{}",
+            v.fingerprint, v.visitor_kind, v.referrer_kind, v.last_seen_at
+        ),
+        silan_viking_app::VisitorDisclosure::Network => format!(
+            "{}\t{}\t{}\t{}\t{}",
+            v.fingerprint, v.ip_masked, v.visitor_kind, v.referrer_kind, v.last_seen_at
+        ),
+    }
 }
 
 fn stats_crawlers(db_path: &Path, uri: &str) -> Result<(), String> {
@@ -5081,6 +5347,53 @@ fn which(name: &str) -> Option<PathBuf> {
     })
 }
 
+/// Guidance printed when a deploy verb runs without a `[deploy]` section:
+/// the required fields, a copyable example block, and the guided path.
+const DEPLOY_SECTION_GUIDANCE: &str = "\
+No [deploy] section in silan-viking.toml, so there is no production target.
+
+Required fields:
+  host          server hostname (not localhost; use `silan site preview` locally)
+  user          SSH user on that host
+  ssh_key_path  path to the private key (mode 600); the key itself is never stored
+  remote_dir    deployment directory on the server
+Recommended:
+  public_url    public site URL; also the content API base for `site update-content`
+
+Example — add to silan-viking.toml:
+  [deploy]
+  mode         = \"nginx\"
+  host         = \"example.com\"
+  user         = \"deploy\"
+  ssh_key_path = \"~/.ssh/silan_deploy_ed25519\"
+  remote_dir   = \"/www/wwwroot/example.com\"
+  public_url   = \"https://example.com\"
+
+Guided setup: `silan onboard` walks through deployment, credentials and the first release.";
+
+/// Whether the project config declares a `[deploy]` section. A missing or
+/// unreadable config counts as "no section"; `deploy_config` reports the
+/// precise parse error once a section exists.
+fn has_deploy_section(content_root: &Path) -> bool {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    fs::read_to_string(project_root.join("silan-viking.toml"))
+        .ok()
+        .and_then(|text| text.parse::<toml::Value>().ok())
+        .is_some_and(|config| config.get("deploy").is_some())
+}
+
+/// Stop a deploy verb that has no `[deploy]` target, after printing how to
+/// add one. The verb still exits non-zero.
+fn require_deploy_section(content_root: &Path, verb: &str) -> Result<(), String> {
+    if has_deploy_section(content_root) {
+        return Ok(());
+    }
+    eprintln!("{DEPLOY_SECTION_GUIDANCE}\n");
+    Err(format!(
+        "`silan {verb}` needs a [deploy] section in silan-viking.toml (see above)"
+    ))
+}
+
 fn site_deploy(
     content_root: &Path,
     db_path: &Path,
@@ -5088,6 +5401,7 @@ fn site_deploy(
     confirm: bool,
     what: DeployWhat,
 ) -> Result<(), String> {
+    require_deploy_section(content_root, "site deploy")?;
     if what == DeployWhat::Content {
         return run_content_release(content_root, db_path, confirm);
     }
@@ -5377,45 +5691,70 @@ fn site_rollback(content_root: &Path, db_path: &Path) -> Result<(), String> {
 /// preview stack. Production status is read from the authenticated content
 /// control plane, so this command observes the same state machine used by
 /// deploy and rollback instead of inferring health from a process manager.
+/// `site status` — a read-only report with two independent sections:
+/// production (the remote `[deploy]` target's live content version) and the
+/// local Docker preview. A section whose source is unavailable — no
+/// `[deploy]`, an unreachable host, no Docker daemon — says so instead of
+/// failing the whole command.
 fn site_status(content_root: &Path, db_path: &Path) -> Result<(), String> {
-    let cfg = match deploy_config(content_root) {
-        Ok(cfg) => cfg,
-        Err(_) => return local_site_status(),
-    };
-    if matches!(cfg.host.as_str(), "localhost" | "127.0.0.1" | "local") {
-        return local_site_status();
+    println!("site status");
+    println!("  production:");
+    for line in production_status_lines(content_root, db_path) {
+        println!("    {line}");
     }
-
-    let project_root = content_root.parent().unwrap_or(content_root);
-    let control = DeliveryControl::open(content_root, db_path, project_root)
-        .map_err(|error| error.to_string())?;
-    let status = control
-        .remote_content_version()
-        .map_err(|error| error.to_string())?;
-    println!("site status — {}", cfg.host);
-    println!("  health:         {}", status.health);
-    println!("  content commit: {}", status.content_commit);
-    println!("  content hash:   {}", status.content_hash);
-    println!("  generated at:   {}", status.generated_at);
-    println!(
-        "  media root:     {}",
-        if status.media_root_ok {
-            "ok"
-        } else {
-            "invalid"
-        }
-    );
+    println!("  local preview:");
+    for line in preview_status_lines() {
+        println!("    {line}");
+    }
     Ok(())
 }
 
-/// Report the local Docker stack — what `site status` shows when there is no
-/// remote `[deploy]` to ask about. Uses the bundled compose name labels so it
-/// finds the stack even if the staging directory has been cleaned up.
-fn local_site_status() -> Result<(), String> {
-    // `docker compose ls` lists every compose project; we filter to the ones
-    // whose name contains `silan` (the bundled compose file is named
-    // `silan-viking-deploy`). If docker itself is missing, surface a clear
-    // hint pointing at how to actually run a local instance.
+fn production_status_lines(content_root: &Path, db_path: &Path) -> Vec<String> {
+    if !has_deploy_section(content_root) {
+        return vec![
+            "not configured — no [deploy] section in silan-viking.toml".to_owned(),
+            "run `silan onboard` (guided) or `silan site deploy --dry-run` for the fields"
+                .to_owned(),
+        ];
+    }
+    let cfg = match deploy_config(content_root) {
+        Ok(cfg) => cfg,
+        Err(error) => return vec![format!("misconfigured — {error}")],
+    };
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let status = DeliveryControl::open(content_root, db_path, project_root)
+        .map_err(|error| error.to_string())
+        .and_then(|control| {
+            control
+                .remote_content_version()
+                .map_err(|error| error.to_string())
+        });
+    match status {
+        Ok(status) => vec![
+            format!("host:           {}", cfg.host),
+            format!("health:         {}", status.health),
+            format!("content commit: {}", status.content_commit),
+            format!("content hash:   {}", status.content_hash),
+            format!("generated at:   {}", status.generated_at),
+            format!(
+                "media root:     {}",
+                if status.media_root_ok {
+                    "ok"
+                } else {
+                    "invalid"
+                }
+            ),
+        ],
+        Err(error) => vec![
+            format!("host:           {}", cfg.host),
+            format!("unavailable — {error}"),
+        ],
+    }
+}
+
+/// The local Docker preview stack, found through the bundled compose project
+/// names so it is reported even if the staging directory was cleaned up.
+fn preview_status_lines() -> Vec<String> {
     let out = Command::new("docker")
         .args(["compose", "ls", "--all", "--format", "json"])
         .output();
@@ -5424,21 +5763,23 @@ fn local_site_status() -> Result<(), String> {
             let raw = String::from_utf8_lossy(&out.stdout);
             let trimmed = raw.trim();
             if trimmed.is_empty() || trimmed == "[]" {
-                println!("site status — no local stack");
-                println!("  run `silan site preview --confirm` to start one (needs Docker)");
+                vec![
+                    "no local stack".to_owned(),
+                    "run `silan site preview --confirm` to start one (needs Docker)".to_owned(),
+                ]
             } else {
-                println!("site status — local docker stacks:");
-                print!("{raw}");
+                trimmed.lines().map(str::to_owned).collect()
             }
-            Ok(())
         }
-        Ok(out) => Err(format!(
-            "docker compose ls failed: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        )),
-        Err(e) => Err(format!(
-            "docker not available ({e}) — install Docker or configure [deploy] for a remote target"
-        )),
+        Ok(out) => vec![format!(
+            "unavailable — Docker is not running ({})",
+            String::from_utf8_lossy(&out.stderr)
+                .lines()
+                .next()
+                .unwrap_or("docker compose ls failed")
+                .trim()
+        )],
+        Err(_) => vec!["unavailable — Docker is not installed".to_owned()],
     }
 }
 
@@ -6128,6 +6469,8 @@ mod tests {
         validate_stats_token, CredentialProfile, DeployConfig, GitCodeArtifact,
         DEPLOYED_STATS_TOKEN_ENV, PRIVATE_API_TOKEN_ENV,
     };
+    use super::{parse_relation_link_args, render_lint_report, visitor_line, InitProfile};
+    use silan_viking_app::{LintIssue, VisitorDisclosure, VisitorRow};
     use std::fs;
     use std::path::PathBuf;
     use std::process::Command;
@@ -6295,5 +6638,124 @@ mod tests {
         assert_eq!(version, "committed\n");
         drop(artifact);
         fs::remove_dir_all(root).expect("remove fixture");
+    }
+
+    fn issue(level: &str, uri: &str) -> LintIssue {
+        LintIssue {
+            level: level.to_owned(),
+            uri: uri.to_owned(),
+            message: format!("{level} message"),
+        }
+    }
+
+    #[test]
+    fn lint_report_groups_by_severity_and_collapses_info() {
+        let issues = vec![
+            issue("info", "silan://a"),
+            issue("warn", "silan://b"),
+            issue("fatal", "silan://c"),
+            issue("info", "silan://d"),
+        ];
+
+        let (report, fatals) = render_lint_report(&issues, false);
+
+        assert_eq!(fatals, 1);
+        let fatal_at = report.find("fatal (1)").expect("fatal group");
+        let warn_at = report.find("warn (1)").expect("warn group");
+        let info_at = report.find("info (2)").expect("info group");
+        assert!(fatal_at < warn_at && warn_at < info_at, "{report}");
+        assert!(report.contains("--verbose"), "{report}");
+        assert!(!report.contains("silan://a"), "info is collapsed: {report}");
+        assert!(report.ends_with("\n4 issue(s); 1 fatal\n"), "{report}");
+
+        let (verbose, _) = render_lint_report(&issues, true);
+        assert!(verbose.contains("silan://a") && verbose.contains("silan://d"));
+        assert!(verbose.ends_with("\n4 issue(s); 1 fatal\n"));
+        assert_eq!(render_lint_report(&[], false).0, "ok — 0 lint issues\n");
+    }
+
+    #[test]
+    fn relation_link_arguments_report_the_precise_problem() {
+        assert_eq!(
+            parse_relation_link_args(&["a", "b", "--type", "documents"]).expect("valid"),
+            ("a", "b", "documents")
+        );
+        assert_eq!(
+            parse_relation_link_args(&["--type=part_of", "a", "b"]).expect("valid"),
+            ("a", "b", "part_of")
+        );
+        let missing_value = parse_relation_link_args(&["a", "b", "--type"]).expect_err("no value");
+        assert!(
+            missing_value.contains("`--type` needs a value"),
+            "{missing_value}"
+        );
+        for kind in [
+            "evolved_into",
+            "evolved_from",
+            "documents",
+            "references",
+            "supersedes",
+            "part_of",
+        ] {
+            assert!(missing_value.contains(kind), "{missing_value}");
+        }
+        let unknown = parse_relation_link_args(&["a", "b", "--type", "likes"]).expect_err("kind");
+        assert!(
+            unknown.contains("unknown relation type `likes`"),
+            "{unknown}"
+        );
+        let one_endpoint = parse_relation_link_args(&["a", "--type", "documents"]).expect_err("to");
+        assert!(one_endpoint.contains("<to-uri>"), "{one_endpoint}");
+        let no_type = parse_relation_link_args(&["a", "b"]).expect_err("type");
+        assert!(no_type.contains("missing `--type <kind>`"), "{no_type}");
+    }
+
+    #[test]
+    fn init_flags_set_the_seeded_identity() {
+        let values = InitProfile::parse_flags(&[
+            "--name",
+            "Ada Lovelace",
+            "--title=Analyst",
+            "--email",
+            "ada@example.org",
+            "--project",
+            "ada-site",
+        ])
+        .expect("flags");
+        assert_eq!(
+            values,
+            [
+                Some("ada-site".to_owned()),
+                Some("Ada Lovelace".to_owned()),
+                Some("Analyst".to_owned()),
+                Some("ada@example.org".to_owned()),
+            ]
+        );
+        let missing = InitProfile::parse_flags(&["--name"]).expect_err("value");
+        assert!(missing.contains("`--name` needs a value"), "{missing}");
+        let unknown = InitProfile::parse_flags(&["--colour", "red"]).expect_err("flag");
+        assert!(unknown.contains("unknown argument `--colour`"), "{unknown}");
+        assert!(InitProfile::parse_flags(&["--name", "a\"b"]).is_err());
+    }
+
+    #[test]
+    fn anonymous_visitor_lines_carry_no_network_address() {
+        let row: VisitorRow = serde_json::from_value(serde_json::json!({
+            "fingerprint": "fp-1",
+            "ip_masked": "14.100.52.x",
+            "ip_address": "14.100.52.7",
+            "visitor_kind": "human",
+            "referrer_kind": "search",
+            "last_seen_at": "2026-10-01T00:00:00Z",
+        }))
+        .expect("row");
+
+        let anonymous = visitor_line(
+            &row.clone().disclosed(VisitorDisclosure::Anonymous),
+            VisitorDisclosure::Anonymous,
+        );
+        assert_eq!(anonymous, "fp-1\thuman\tsearch\t2026-10-01T00:00:00Z");
+        let network = visitor_line(&row, VisitorDisclosure::Network);
+        assert!(network.contains("14.100.52.x"), "{network}");
     }
 }

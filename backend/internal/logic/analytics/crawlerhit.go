@@ -17,7 +17,8 @@ import (
 // CrawlerHit is the server-edge representation of a static page request.
 // Static HTML never passes through the API middleware, so nginx mirrors the
 // request here after serving it. All recognized bots enter the crawler access
-// log; configured AI/search crawlers additionally enter the content ledger.
+// log; configured AI/search crawlers additionally enter the content ledger
+// for page and machine-file requests (never for assets).
 type CrawlerHit struct {
 	RequestID  string
 	Method     string
@@ -41,6 +42,11 @@ func RecordCrawlerHit(ctx context.Context, svcCtx *svc.ServiceContext, hit Crawl
 
 	accessErr := recordCrawlerAccess(ctx, svcCtx, hit, classification)
 	if _, isDiscoveryCrawler := classification.VisitorKind(); !isDiscoveryCrawler {
+		return accessErr
+	}
+	// Assets are rendering dependencies, not content: they stay in the
+	// access log (and its asset aggregate) but never become page views.
+	if traffic.ClassifyRequestResource(hit.RequestURI) == traffic.RequestResourceAsset {
 		return accessErr
 	}
 	entityType, entityID := resolveCrawlerTarget(ctx, svcCtx, hit.RequestURI)

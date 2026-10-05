@@ -1020,10 +1020,23 @@ type (
 		EntityID string `json:"entity_id"`
 		IsPublic bool `json:"is_public"`
 	}
-	// VisitorRow is one visitor observation of a content item.
+	// VisitorsRequest identifies one item. Network addresses are returned only
+	// when the authenticated owner sets include_network=true.
+	VisitorsRequest {
+		EntityType     string `form:"entity_type,optional"`
+		EntityID       string `form:"entity_id,optional"`
+		IncludeNetwork bool   `form:"include_network,optional"`
+	}
+	// StatsSnapshotRequest applies the same network opt-in to the snapshot.
+	StatsSnapshotRequest {
+		IncludeNetwork bool `form:"include_network,optional"`
+	}
+	// VisitorRow is one anonymous visitor observation of a content item:
+	// fingerprint is a pseudonymous visitor id; ip_address / ip_masked are
+	// empty unless include_network=true.
 	VisitorRow {
 		Fingerprint  string `json:"fingerprint"`
-		IPAddress    string `json:"ip_address"`
+		IPAddress    string `json:"ip_address,omitempty"`
 		IPMasked     string `json:"ip_masked"`
 		VisitorKind  string `json:"visitor_kind"`
 		ReferrerKind string `json:"referrer_kind"`
@@ -1145,7 +1158,7 @@ service backend-api {
 service backend-api {
 	@doc "De-identified visitor list of one item"
 	@handler Visitors
-	get /visitors (StatsRequest) returns (VisitorsResponse)
+	get /visitors (VisitorsRequest) returns (VisitorsResponse)
 
 	@doc "Visitor-kind (human / search / AI crawler) breakdown"
 	@handler CrawlerBreakdown
@@ -1161,7 +1174,7 @@ service backend-api {
 
 	@doc "Full-site snapshot used by SDK sync"
 	@handler Snapshot
-	get /snapshot
+	get /snapshot (StatsSnapshotRequest)
 
 	@doc "Publish or hide one comment"
 	@handler UpdateCommentVisibility

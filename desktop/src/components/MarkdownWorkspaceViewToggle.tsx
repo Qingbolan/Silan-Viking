@@ -16,12 +16,15 @@ const viewPresentation: Record<
 type MarkdownWorkspaceViewToggleProps = {
   view: MarkdownWorkspaceView;
   className?: string;
+  /** Render the current view name next to the icon. */
+  showLabel?: boolean;
   onChange: (view: MarkdownWorkspaceView) => void;
 };
 
 export function MarkdownWorkspaceViewToggle({
   view,
   className,
+  showLabel = false,
   onChange,
 }: MarkdownWorkspaceViewToggleProps) {
   const current = viewPresentation[view];
@@ -39,6 +42,7 @@ export function MarkdownWorkspaceViewToggle({
       aria-label={`${current.description} view. Switch to ${next.label} view`}
     >
       <Icon size={15} />
+      {showLabel && <span>{current.label} view</span>}
     </button>
   );
 }

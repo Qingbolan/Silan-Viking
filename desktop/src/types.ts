@@ -232,6 +232,13 @@ export type GeoInsightReport = {
     detail: string;
     evidence: GeoEvidence[];
   }>;
+  /** Why the score is what it is, one row per scored component. */
+  score_components?: Array<{
+    label: string;
+    points: number;
+    max: number;
+    reason: string;
+  }>;
 };
 
 export type GeoEvidence = {

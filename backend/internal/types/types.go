@@ -931,11 +931,26 @@ type StatsResponse struct {
 	Comments   int    `json:"comments"`
 }
 
+// StatsSnapshotRequest selects the snapshot projection. Network addresses
+// are omitted unless the authenticated owner explicitly asks for them.
+type StatsSnapshotRequest struct {
+	IncludeNetwork bool `form:"include_network,optional"`
+}
+
 type StatsSnapshotResponse struct {
 	GeneratedAt                string              `json:"generated_at"`
 	InteractionDetailsComplete bool                `json:"interaction_details_complete"`
 	Items                      []StatsSnapshotItem `json:"items"`
 	Countries                  []CountryRow        `json:"countries"`
+	CrawlerAssets              []CrawlerAssetRow   `json:"crawler_assets"`
+}
+
+// CrawlerAssetRow counts one crawler's asset requests (scripts, styles,
+// fonts, images). Assets are never content views; they are reported only
+// as this aggregate.
+type CrawlerAssetRow struct {
+	CrawlerName string `json:"crawler_name"`
+	Count       int    `json:"count"`
 }
 
 type CountryRow struct {
@@ -951,7 +966,7 @@ type CountryRow struct {
 	Longitude      float64  `json:"longitude"`
 	TimeZone       string   `json:"time_zone"`
 	AccuracyRadius int      `json:"accuracy_radius"`
-	IPAddresses    []string `json:"ip_addresses"`
+	IPAddresses    []string `json:"ip_addresses,omitempty"`
 	Count          int      `json:"count"`
 }
 
@@ -1043,9 +1058,20 @@ type VerifyEmailResponse struct {
 	Reason string `json:"reason,optional"`
 }
 
+// VisitorsRequest identifies one item; IncludeNetwork is the explicit owner
+// opt-in for network addresses.
+type VisitorsRequest struct {
+	EntityType     string `form:"entity_type,optional"`
+	EntityID       string `form:"entity_id,optional"`
+	IncludeNetwork bool   `form:"include_network,optional"`
+}
+
+// VisitorRow is anonymous by default: Fingerprint carries a pseudonymous
+// visitor id, and IPAddress / IPMasked stay empty unless the owner requested
+// network details.
 type VisitorRow struct {
 	Fingerprint    string  `json:"fingerprint"`
-	IPAddress      string  `json:"ip_address"`
+	IPAddress      string  `json:"ip_address,omitempty"`
 	IPMasked       string  `json:"ip_masked"`
 	VisitorKind    string  `json:"visitor_kind"`
 	ReferrerKind   string  `json:"referrer_kind"`

@@ -24,32 +24,51 @@ must run the default checked path.
 ## One-line install
 
 ```sh
+# stable (default): the latest GitHub Release
 curl -fsSL https://raw.githubusercontent.com/Qingbolan/Silan-Context-System/main/engine/install.sh | sh
+
+# main: a verified source build of the current main branch
+curl -fsSL https://raw.githubusercontent.com/Qingbolan/Silan-Context-System/main/engine/install.sh | sh -s -- --channel main
 ```
 
-This:
+The installer has two explicit channels.
+
+**`stable`** (default):
 
 1. detects your OS and CPU architecture (macOS and Linux, Intel and ARM);
-2. downloads the matching prebuilt binary from the project's GitHub Releases;
-3. installs `silan-viking` and creates the `silan` / `svk` aliases;
-4. tells you the next command to run.
+2. downloads the matching prebuilt binary and the release's `SHA256SUMS`;
+3. refuses to install unless the binary's SHA-256 matches `SHA256SUMS`;
+4. atomically installs `silan-viking`, creates the `silan` / `svk` aliases,
+   re-checks the installed file's hash, and writes an install receipt.
 
-If no prebuilt binary exists for your platform (or no release is published
-yet), the script **falls back to building from source** with `cargo` — that
-path needs the Rust toolchain ([rustup.rs](https://rustup.rs)) and TideMark so
-the source build receives the same Git-native version coordinate.
+If the release has no binary for your platform, stable fails and tells you to
+use `--channel main`; it never silently switches to a source build.
+
+**`main`** clones the repository at `--ref` (default `main`; a tag or commit
+pins it) and runs the documented source installer, `engine/install-dev.sh`:
+the full engine test suite, a `Cargo.lock` release build, version and hash
+verification, atomic activation, and the receipt. It needs `git`, the Rust
+toolchain ([rustup.rs](https://rustup.rs)) and
+[TideMark](https://github.com/Qingbolan/TideMark). Use it when you need
+features that are on main but not yet in a release — for example Moments and
+the Desktop commands described in the tutorials. main is not a release and can
+change at any time.
+
+Both channels print what was installed (version, source, SHA-256) and record
+it in `~/.local/state/silan-viking/install-receipt`.
 
 ### Options
 
-The installer reads two environment variables:
-
 ```sh
-# install somewhere other than ~/.local/bin
-curl -fsSL .../install.sh | SILAN_INSTALL_DIR="$HOME/bin" sh
-
-# pin a specific release tag instead of the latest
-curl -fsSL .../install.sh | SILAN_VERSION="v0.1.0" sh
+sh install.sh --help                       # full usage
+... | sh -s -- --version v1.0.0            # stable: pin a release tag
+... | sh -s -- --channel main --ref <sha>  # main: pin a commit or tag
+... | sh -s -- --prefix "$HOME/bin"        # install somewhere other than ~/.local/bin
+... | sh -s -- --state-dir DIR             # receipt location
 ```
+
+Environment equivalents: `SILAN_CHANNEL`, `SILAN_VERSION`, `SILAN_REF`,
+`SILAN_INSTALL_DIR`, `SILAN_VIKING_STATE_DIR`.
 
 ### Put it on your PATH
 
@@ -65,8 +84,9 @@ export PATH="$HOME/.local/bin:$PATH"
 The public `v1.0.0` release can initialize, validate, index, and publish
 Markdown-backed content. It uses the earlier `idea` / `update` naming. The
 current main branch has since moved `update` to `moment` and added source-only
-desktop/onboarding work; those post-release commands require a source build
-until a newer release is published.
+desktop/onboarding work; those post-release commands require
+`install.sh --channel main` (or `engine/install-dev.sh` in a checkout) until a
+newer release is published.
 
 ```sh
 mkdir my-site && cd my-site

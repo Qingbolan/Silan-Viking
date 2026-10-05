@@ -64,6 +64,18 @@ import {
 } from './components/ContentRelationManager';
 import { LanguageCloseControls, type LanguageCloseTab } from './components/LanguageCloseControls';
 import { LanguageReviewPanel } from './components/LanguageReviewPanel';
+import { ReviewSuggestionDialog } from './components/ReviewSuggestionDialog';
+import { ModalLayer } from './components/ModalLayer';
+import { SectionCommitPanel } from './components/SectionCommitPanel';
+import { WorkspaceSwitchNotice } from './components/WorkspaceSwitcher';
+import { sectionCommitAvailability } from './lib/sectionCommit';
+import {
+  classifyRemoteStatusError,
+  remoteStatusFailureVisible,
+  remoteStatusRetryDelay,
+  type RemoteStatusFailure,
+} from './lib/remoteStatus';
+import { PaidAiUnavailableHint, usePaidAiGate } from './components/PaidAiGate';
 import {
   InteractionDetailsPanel,
   type InteractionDetailsState,
@@ -148,11 +160,13 @@ import {
   type DashboardRankingMetric,
 } from './app/dashboard/trafficInsights';
 import {
-  contentSettingsPages,
+  contentSettingsPagesFor,
+  contentSettingsPageTitle,
   defaultArticleAttribution,
   metadataCoverLabel,
   metadataSummaryLabel,
   seriesSettingsPages,
+  seriesSettingsPageTitle,
   SettingsPageIntro,
   SettingsPageNavigation,
   type ContentRailMode,
@@ -188,6 +202,11 @@ import {
   languageReviewFindingId,
   useLanguageReviewWorkflow,
 } from './lib/languageReviewWorkflow';
+import {
+  initialReviewSuggestionState,
+  reviewSourceEdit,
+  reviewSuggestionTransition,
+} from './lib/reviewSuggestion';
 import {
   countResourcesByShelf,
   filterResourceDocuments,
@@ -236,11 +255,11 @@ import type {
   WorkspacePreferences,
 } from './types';
 
-type PendingReviewAction = {
+/** Navigation to a reviewed sentence; it only focuses, never edits. */
+type PendingReviewFocus = {
   findingId: string;
   sourcePath: string;
   language: string;
-  mode: 'focus' | 'apply';
 };
 
 const entityMeta: Record<EntityFilter, { label: string; eyebrow: string; empty: string; Icon: typeof Folder }> = {
@@ -253,12 +272,13 @@ const entityMeta: Record<EntityFilter, { label: string; eyebrow: string; empty: 
   moment: { label: 'Moments', eyebrow: 'Timeline', empty: 'No moments yet.', Icon: Aperture },
 };
 
-const ideaCategories: Array<{ value: IdeaCategory; label: string; Icon: typeof Sparkles }> = [
-  { value: 'inspiration', label: '灵感', Icon: Sparkles },
-  { value: 'thought', label: '想法', Icon: Brain },
-  { value: 'decision', label: '决定', Icon: Scale },
-  { value: 'state', label: '状态', Icon: Activity },
-  { value: 'event', label: '事件', Icon: CalendarDays },
+// Labels come from the capture copy so they follow the UI language.
+const ideaCategories: Array<{ value: IdeaCategory; Icon: typeof Sparkles }> = [
+  { value: 'inspiration', Icon: Sparkles },
+  { value: 'thought', Icon: Brain },
+  { value: 'decision', Icon: Scale },
+  { value: 'state', Icon: Activity },
+  { value: 'event', Icon: CalendarDays },
 ];
 
 const momentTypes = [
@@ -295,6 +315,8 @@ export default function App() {
   }>({ state: 'loading', plan: null, error: null });
   const deploymentPlan = deploymentPlanLoad.plan;
   const [deliverySyncStatus, setDeliverySyncStatus] = React.useState<DeliverySyncStatus | null>(null);
+  /** A deployed-status failure shown only after transient retries are exhausted. */
+  const [remoteStatusFailure, setRemoteStatusFailure] = React.useState<RemoteStatusFailure | null>(null);
   const [refreshingDeliveryStatus, setRefreshingDeliveryStatus] = React.useState(false);
   const [activityPage, setActivityPage] = React.useState<0 | 1>(0);
   const [deliveryPage, setDeliveryPage] = React.useState<0 | 1 | 2 | 3 | 4>(0);
@@ -386,6 +408,8 @@ export default function App() {
   const [metadataCoverError, setMetadataCoverError] = React.useState<string | undefined>(undefined);
   const [metadataCoverLocalPreview, setMetadataCoverLocalPreview] = React.useState('');
   const [relationshipBusy, setRelationshipBusy] = React.useState('');
+  /** Explains a resource created by a conversion: it exists locally and is not committed. */
+  const [creationNotice, setCreationNotice] = React.useState<string | null>(null);
   const [relationshipError, setRelationshipError] = React.useState<string | null>(null);
   const [relationshipTargetKind, setRelationshipTargetKind] = React.useState<RelationTargetKind>('blog');
   const [relationshipTargetSlug, setRelationshipTargetSlug] = React.useState('');
@@ -413,12 +437,9 @@ export default function App() {
   const [newProjectError, setNewProjectError] = React.useState<string | null>(null);
   const [syncingStats, setSyncingStats] = React.useState(false);
   const [statsSyncError, setStatsSyncError] = React.useState<string | null>(null);
-  const [versionStatus, setVersionStatus] = React.useState<VersionStatus | null>(null);
   const [shelfVersionStatus, setShelfVersionStatus] = React.useState<VersionStatus | null>(null);
-  const [versionLoading, setVersionLoading] = React.useState(false);
-  const [releasingScope, setReleasingScope] = React.useState<VersionScope | ''>('');
-  const [versionError, setVersionError] = React.useState<string | null>(null);
-  const [versionPanelOpen, setVersionPanelOpen] = React.useState(false);
+  /** The section whose version status and commit preview is open. */
+  const [commitPanelScope, setCommitPanelScope] = React.useState<VersionScope | null>(null);
   const [mediaDragActive, setMediaDragActive] = React.useState(false);
   const [mediaImporting, setMediaImporting] = React.useState(false);
   const [mediaDropError, setMediaDropError] = React.useState<string | null>(null);
@@ -427,6 +448,8 @@ export default function App() {
   const [geoInsights, setGeoInsights] = React.useState<GeoInsightReport | null>(null);
   const [geoLoading, setGeoLoading] = React.useState(false);
   const [geoError, setGeoError] = React.useState<string | null>(null);
+  /** Document whose GEO check runs once its editor is open (dashboard → action). */
+  const [pendingGeoDocumentId, setPendingGeoDocumentId] = React.useState<string | null>(null);
   const [stateSavingId, setStateSavingId] = React.useState('');
   const [gitPanelOpen, setGitPanelOpen] = React.useState(false);
   const [seriesEditingSlug, setSeriesEditingSlug] = React.useState('');
@@ -444,7 +467,11 @@ export default function App() {
   const [seriesCoverBusy, setSeriesCoverBusy] = React.useState(false);
   const [seriesCoverError, setSeriesCoverError] = React.useState<string | undefined>(undefined);
   const [seriesCoverLocalPreview, setSeriesCoverLocalPreview] = React.useState('');
-  const [pendingReviewAction, setPendingReviewAction] = React.useState<PendingReviewAction | null>(null);
+  const [pendingReviewFocus, setPendingReviewFocus] = React.useState<PendingReviewFocus | null>(null);
+  const [reviewSuggestion, dispatchReviewSuggestion] = React.useReducer(
+    reviewSuggestionTransition,
+    initialReviewSuggestionState,
+  );
   const editorRef = React.useRef<MarkdownEditorHandle | null>(null);
   const autosaveQueue = React.useRef(new AutosaveQueue()).current;
   const settingsWriteRef = React.useRef<Promise<boolean> | null>(null);
@@ -468,6 +495,10 @@ export default function App() {
   const settingsReturnScreenRef = React.useRef<'dashboard' | 'content'>('dashboard');
   const pendingWorkspaceLocationKeyRef = React.useRef<string | null>(null);
   const languageReview = useLanguageReviewWorkflow();
+  const paidAi = usePaidAiGate();
+  const reviewAvailability = paidAi.availability('reader_review');
+  const translationAvailability = paidAi.availability('translation');
+  const selectionAssistAvailability = paidAi.availability('selection_edit');
   const translationSync = useTranslationSyncWorkflow();
   const syncingTranslation = (
     translationSync.state.phase === 'saving_source'
@@ -903,7 +934,7 @@ export default function App() {
       return;
     }
     if (selected && preferredMarkdownLanguages.includes(language)) {
-      void generateMissingTranslation(language);
+      void requestMissingTranslation(language);
       return;
     }
     setChromeLanguage(language);
@@ -1076,6 +1107,7 @@ export default function App() {
     localCommitCount: deliverySyncStatus ? localDeliveryCount : null,
     remoteCommitCount: remoteDeliveryCount,
     syncState: deliverySyncStatus?.state ?? null,
+    remoteFailure: remoteStatusFailure,
     workspaceChangeCount,
     unsavedDocumentCount: dirtyIds.size,
     planState: deploymentPlanLoad.state,
@@ -1248,9 +1280,10 @@ export default function App() {
     try {
       const status = await invoke<DeliverySyncStatus>('get_delivery_sync_status');
       setDeliverySyncStatus(status);
+      setRemoteStatusFailure(null);
       setError((current) => clearResolvedSynchronizationError(current, status));
     } catch (reason) {
-      setError(String(reason));
+      setRemoteStatusFailure(classifyRemoteStatusError(reason));
     } finally {
       setRefreshingDeliveryStatus(false);
     }
@@ -1358,27 +1391,34 @@ export default function App() {
   React.useEffect(() => {
     if (screen !== 'dashboard') return;
     let active = true;
-    let loadingStatus = false;
+    let timer = 0;
+    let consecutiveFailures = 0;
+    // Poll every 2s while healthy; back off after failures so a transient
+    // network/TLS fault is retried quietly before a friendly notice appears.
     const refresh = async () => {
-      if (loadingStatus) return;
-      loadingStatus = true;
+      let delay = 2_000;
       try {
         const status = await invoke<DeliverySyncStatus>('get_delivery_sync_status');
-        if (active) {
-          setDeliverySyncStatus(status);
-          setError((current) => clearResolvedSynchronizationError(current, status));
-        }
+        if (!active) return;
+        consecutiveFailures = 0;
+        setDeliverySyncStatus(status);
+        setRemoteStatusFailure(null);
+        setError((current) => clearResolvedSynchronizationError(current, status));
+        // Without a deploy target there is nothing remote to watch.
+        if (status.state === 'not_configured') delay = 30_000;
       } catch (reason) {
-        if (active) setError(String(reason));
-      } finally {
-        loadingStatus = false;
+        if (!active) return;
+        consecutiveFailures += 1;
+        const failure = classifyRemoteStatusError(reason);
+        if (remoteStatusFailureVisible(failure, consecutiveFailures)) setRemoteStatusFailure(failure);
+        delay = remoteStatusRetryDelay(consecutiveFailures);
       }
+      if (active) timer = window.setTimeout(() => void refresh(), delay);
     };
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 2_000);
     return () => {
       active = false;
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
     };
   }, [screen]);
 
@@ -1426,6 +1466,17 @@ export default function App() {
     setError(null);
     setScreen('settings');
   };
+
+  const openWorkspaceSettingsRef = React.useRef(openWorkspaceSettings);
+  openWorkspaceSettingsRef.current = openWorkspaceSettings;
+  const { registerSettingsHandler, refreshCredentials } = paidAi;
+  React.useEffect(() => registerSettingsHandler(
+    () => openWorkspaceSettingsRef.current(true),
+  ), [registerSettingsHandler]);
+  React.useEffect(() => {
+    // A key added in Settings must enable AI actions as soon as Settings closes.
+    if (screen !== 'settings') refreshCredentials();
+  }, [refreshCredentials, screen]);
 
   const openContentGroup = (group: ContentGroup) => {
     if (!editableMasonryContentKinds.has(group.kind)) return;
@@ -1486,6 +1537,28 @@ export default function App() {
     setContentEditorOpen(true);
   };
 
+  /**
+   * Feedback → action: open the content a dashboard row refers to and,
+   * optionally, run its GEO check right away.
+   */
+  const openFeedbackContent = (
+    kind: string,
+    identity: { slug?: string; title: string },
+    runGeoCheck: boolean,
+  ) => {
+    const group = groupDocumentsByResource(activeDocuments).find((candidate) => (
+      candidate.kind === kind
+      && (identity.slug ? candidate.slug === identity.slug : candidate.title === identity.title)
+    ));
+    if (!group || !editableMasonryContentKinds.has(group.kind)) {
+      openShelf(kind === 'episode' ? 'blog' : kind as EntityFilter);
+      return;
+    }
+    openContentGroup(group);
+    const primary = selectPrimaryDocument(group);
+    if (runGeoCheck && primary) setPendingGeoDocumentId(primary.id);
+  };
+
   const refreshDocuments = () => {
     if (dirtyIds.size > 0) {
       setConfirmingRefresh(true);
@@ -1501,47 +1574,10 @@ export default function App() {
 
   const cancelRefresh = () => setConfirmingRefresh(false);
 
-  const openVersionPanel = async (scope = versionScope) => {
-    if (!scope) return;
-    if (versionLoading) return;
-    setVersionPanelOpen(true);
-    setVersionLoading(true);
-    setVersionError(null);
-    try {
-      setVersionStatus(await invoke<VersionStatus>('get_version_status', { scope }));
-    } catch (reason) {
-      setVersionError(String(reason));
-    } finally {
-      setVersionLoading(false);
-    }
-  };
-
-  const closeVersionPanel = () => {
-    if (versionLoading || releasingScope) return;
-    setVersionPanelOpen(false);
-  };
-
-  const releaseCurrentScope = async (scope = versionScope) => {
-    if (!scope) return;
-    if (versionLoading || releasingScope) return;
-    if (dirtyIds.size > 0) {
-      setError('Save open Markdown edits before releasing this section.');
-      return;
-    }
-    setReleasingScope(scope);
-    setVersionError(null);
-    try {
-      const nextStatus = await invoke<VersionStatus>('release_scope', { scope });
-      setVersionStatus(nextStatus);
-      setShelfVersionStatus(nextStatus);
-      await loadDocuments();
-      if (deploymentPlan) await Promise.all([loadDeploymentPlan(), loadDeliverySyncStatus()]);
-    } catch (reason) {
-      setVersionError(String(reason));
-      setVersionPanelOpen(true);
-    } finally {
-      setReleasingScope('');
-    }
+  const sectionCommitCompleted = async (status: VersionStatus) => {
+    setShelfVersionStatus(status);
+    await loadDocuments();
+    if (deploymentPlan) await Promise.all([loadDeploymentPlan(), loadDeliverySyncStatus()]);
   };
 
   const refreshWorkspace = async () => {
@@ -1556,14 +1592,17 @@ export default function App() {
       if (screen === 'dashboard') {
         setSyncingStats(true);
         setStatsSyncError(null);
-        await invoke<StatsSyncReport>('sync_stats');
+        // Stats come from the deployed site; without [deploy] there is none.
+        if (deliverySyncStatus?.state !== 'not_configured') {
+          await invoke<StatsSyncReport>('sync_stats');
+        }
         await Promise.all([loadDocuments(), loadDashboard(), loadDeploymentPlan(), loadDeliverySyncStatus()]);
       } else {
         await loadDocuments();
         if (entityFilter === 'moment') await loadMomentsSettings();
       }
     } catch (reason) {
-      if (screen === 'dashboard') setStatsSyncError(String(reason));
+      if (screen === 'dashboard') setStatsSyncError(classifyRemoteStatusError(reason).message);
       else setError(String(reason));
     } finally {
       setSyncingStats(false);
@@ -1873,6 +1912,20 @@ export default function App() {
     }
   }
 
+  /** Generating a missing language is a paid OpenAI call: confirm it first. */
+  async function requestMissingTranslation(targetLanguage: string) {
+    if (!selected) return null;
+    if (!selected.translations.some((translation) => translation.language === targetLanguage)) {
+      const source = selectedTranslation?.language || selected.canonical_language;
+      if (!await paidAi.confirm({
+        kind: 'translation',
+        action: `Generate ${targetLanguage} translation`,
+        scope: `the ${source} Markdown of “${selected.title} · ${selected.role}”`,
+      })) return null;
+    }
+    return generateMissingTranslation(targetLanguage);
+  }
+
   async function syncCounterpartTranslation() {
     if (!selected || !selectedTranslation || aiTranslationBusy || saving) return;
     const targetLanguage = counterpartMarkdownLanguage(selectedTranslation.language);
@@ -1880,6 +1933,16 @@ export default function App() {
       setError('Language sync supports en and zh Markdown translations.');
       return;
     }
+    const hasTarget = selected.translations.some((translation) => translation.language === targetLanguage);
+    if (!await paidAi.confirm({
+      kind: 'translation',
+      action: hasTarget
+        ? `Sync ${selectedTranslation.language} → ${targetLanguage}`
+        : `Generate ${targetLanguage} translation`,
+      scope: hasTarget
+        ? `the changed ${selectedTranslation.language} blocks of “${selected.title} · ${selected.role}” (current language only)`
+        : `the ${selectedTranslation.language} Markdown of “${selected.title} · ${selected.role}”`,
+    })) return;
     const target = selected.translations.find((translation) => translation.language === targetLanguage);
     const previousSourceBody = savedTranslationContentRef.current.get(selectedTranslation.id)
       ?? selectedTranslation.content;
@@ -2105,17 +2168,31 @@ export default function App() {
 
   const requestSelectionAssist = React.useCallback(async (
     request: MarkdownSelectionAssistRequest,
-  ) => invoke<MarkdownSelectionAssistResult>('edit_markdown_selection', {
-    input: {
-      action: request.action,
-      language: selectedTranslation?.language || chromeLanguage,
-      title: selected?.title || 'Untitled',
-      selected_text: request.selectedText,
-      before_context: request.beforeContext,
-      after_context: request.afterContext,
-      instruction: request.instruction,
-    },
-  }), [chromeLanguage, selected?.title, selectedTranslation?.language]);
+  ) => {
+    const actionLabel = request.action === 'optimize_expression'
+      ? 'Optimize expression'
+      : request.action === 'agent_edit'
+        ? 'Agent local edit'
+        : 'Comment issue';
+    if (!await paidAi.confirm({
+      kind: 'selection_edit',
+      action: actionLabel,
+      scope: 'the selected passage with up to 1,600 characters of context on each side',
+    })) {
+      throw new Error('Cancelled · nothing was sent');
+    }
+    return invoke<MarkdownSelectionAssistResult>('edit_markdown_selection', {
+      input: {
+        action: request.action,
+        language: selectedTranslation?.language || chromeLanguage,
+        title: selected?.title || 'Untitled',
+        selected_text: request.selectedText,
+        before_context: request.beforeContext,
+        after_context: request.afterContext,
+        instruction: request.instruction,
+      },
+    });
+  }, [chromeLanguage, paidAi, selected?.title, selectedTranslation?.language]);
 
   const importDroppedMedia = React.useCallback(async (paths: string[]) => {
     if (!selectedTranslation) {
@@ -2198,6 +2275,12 @@ export default function App() {
     setMediaDropError(null);
     setLastImportedAsset(null);
   }, [selectedTranslation?.id]);
+
+  React.useEffect(() => {
+    if (!pendingGeoDocumentId || !contentEditorOpen || selected?.id !== pendingGeoDocumentId) return;
+    setPendingGeoDocumentId(null);
+    void openGeoPanel();
+  }, [contentEditorOpen, pendingGeoDocumentId, selected?.id]);
 
   const toggleToolbar = () => setToolbarVisible((current) => {
     const next = !current;
@@ -2610,16 +2693,27 @@ export default function App() {
     document.translations.some((translation) => dirtyIds.has(translation.id))
   ));
   const reviewRunning = languageReview.state.phase === 'running';
-  const runCurrentLanguageReview = () => {
+  const runCurrentLanguageReview = async () => {
     if (!selectedTranslation || !selected || dirty || reviewRunning) return;
+    if (!await paidAi.confirm({
+      kind: 'reader_review',
+      action: 'Reader review',
+      scope: `the current language only (${selectedTranslation.language}) of “${selected.title} · ${selected.role}”`,
+    })) return;
     void languageReview.run({
       kind: 'translation',
       id: selectedTranslation.id,
       label: `${selected.title} · ${selected.role} · ${selectedTranslation.language}`,
     });
   };
-  const runResourceLanguageReview = () => {
+  const runResourceLanguageReview = async () => {
     if (!selected || reviewScopeDirty || reviewRunning) return;
+    const wholeScope = selected.entity_type === 'episode' ? 'whole series' : 'whole article';
+    if (!await paidAi.confirm({
+      kind: 'reader_review',
+      action: 'Reader review',
+      scope: `the ${wholeScope}: every language of ${reviewScopeDocuments.length} Markdown part${reviewScopeDocuments.length === 1 ? '' : 's'} of “${selected.series_title && selected.entity_type === 'episode' ? selected.series_title : selected.title}”`,
+    })) return;
     if (selected.entity_type === 'blog') {
       void languageReview.run({
         kind: 'blog',
@@ -2644,11 +2738,7 @@ export default function App() {
     if (matchingResults.length === 0) return null;
     return matchingResults.reduce((count, result) => count + result.findings.length, 0);
   };
-  const queueReviewFindingAction = (
-    result: DocumentLanguageAudit,
-    finding: LanguageAuditFinding,
-    mode: PendingReviewAction['mode'],
-  ) => {
+  const locateReviewedTranslation = (result: DocumentLanguageAudit) => {
     const targetDocument = documents.find((document) => (
       document.translations.some((translation) => (
         translation.source_path === result.source_path
@@ -2661,8 +2751,17 @@ export default function App() {
     ));
     if (!targetDocument || !targetTranslation) {
       setError(`Cannot locate reviewed source ${result.source_path}. Refresh the workspace and review again.`);
-      return;
+      return null;
     }
+    return { targetDocument, targetTranslation };
+  };
+  const focusReviewFinding = (
+    result: DocumentLanguageAudit,
+    finding: LanguageAuditFinding,
+  ) => {
+    const located = locateReviewedTranslation(result);
+    if (!located) return;
+    const { targetDocument, targetTranslation } = located;
     setScreen('content');
     setSelectedId(targetDocument.id);
     setLanguageByDocument((current) => ({
@@ -2674,33 +2773,83 @@ export default function App() {
     if (editableMasonryContentKinds.has(targetDocument.entity_type)) {
       setContentEditorOpen(true);
     }
-    setPendingReviewAction({
+    setPendingReviewFocus({
       findingId: languageReviewFindingId(result, finding),
       sourcePath: result.source_path,
       language: result.language,
-      mode,
     });
     languageReview.close();
+  };
+  const previewReviewSuggestion = (
+    result: DocumentLanguageAudit,
+    finding: LanguageAuditFinding,
+  ) => {
+    const located = locateReviewedTranslation(result);
+    if (!located) return;
+    dispatchReviewSuggestion({
+      type: 'opened',
+      target: {
+        findingId: languageReviewFindingId(result, finding),
+        documentId: located.targetDocument.id,
+        translationId: located.targetTranslation.id,
+        sourcePath: result.source_path,
+        language: result.language,
+        quote: finding.quote,
+        suggestion: finding.suggestion,
+        explanation: finding.explanation,
+        sourceLine: finding.source_line ?? null,
+      },
+    });
+  };
+  const reviewSuggestionMarkdown = reviewSuggestion.phase === 'idle'
+    ? ''
+    : documents.find((document) => document.id === reviewSuggestion.target.documentId)
+      ?.translations.find((translation) => translation.id === reviewSuggestion.target.translationId)
+      ?.content ?? '';
+  const applyReviewSuggestion = async () => {
+    if (reviewSuggestion.phase !== 'previewing') return;
+    const confirmed = reviewSuggestionTransition(reviewSuggestion, { type: 'confirmed' });
+    const next = reviewSourceEdit(confirmed, reviewSuggestionMarkdown);
+    if (next == null || confirmed.phase !== 'saving') return;
+    const { target } = confirmed;
+    dispatchReviewSuggestion({ type: 'confirmed' });
+    const nextDocuments = documentsRef.current.map((document) => (
+      document.id !== target.documentId ? document : {
+        ...document,
+        translations: document.translations.map((translation) => (
+          translation.id === target.translationId ? { ...translation, content: next } : translation
+        )),
+      }
+    ));
+    documentsRef.current = nextDocuments;
+    setDocuments(nextDocuments);
+    const pending = new Set(dirtyIdsRef.current).add(target.translationId);
+    dirtyIdsRef.current = pending;
+    setDirtyIds(pending);
+    try {
+      await flushMarkdown();
+      dispatchReviewSuggestion({ type: 'saved' });
+      languageReview.resolveFinding(target.findingId);
+    } catch (reason) {
+      dispatchReviewSuggestion({ type: 'failed', error: String(reason) });
+    }
   };
 
   React.useEffect(() => {
     if (
-      !pendingReviewAction
-      || selectedTranslation?.source_path !== pendingReviewAction.sourcePath
-      || selectedTranslation.language !== pendingReviewAction.language
+      !pendingReviewFocus
+      || selectedTranslation?.source_path !== pendingReviewFocus.sourcePath
+      || selectedTranslation.language !== pendingReviewFocus.language
     ) {
       return;
     }
     let secondFrame = 0;
     const firstFrame = window.requestAnimationFrame(() => {
       secondFrame = window.requestAnimationFrame(() => {
-        const handled = pendingReviewAction.mode === 'apply'
-          ? editorRef.current?.applyReviewSuggestion(pendingReviewAction.findingId) != null
-          : editorRef.current?.focusReviewFinding(pendingReviewAction.findingId) === true;
-        if (!handled) {
+        if (editorRef.current?.focusReviewFinding(pendingReviewFocus.findingId) !== true) {
           setError('The reviewed sentence no longer matches the editor. Save and run DeepSeek review again.');
         }
-        setPendingReviewAction(null);
+        setPendingReviewFocus(null);
       });
     });
     return () => {
@@ -2708,7 +2857,7 @@ export default function App() {
       if (secondFrame) window.cancelAnimationFrame(secondFrame);
     };
   }, [
-    pendingReviewAction,
+    pendingReviewFocus,
     selectedTranslation?.language,
     selectedTranslation?.source_path,
   ]);
@@ -2735,10 +2884,24 @@ export default function App() {
         '--moments-cover-height': `${momentsSettings.cover.cover_height_px || 420}px`,
       } as React.CSSProperties
     : undefined;
-  const scopedReleaseVisible = Boolean(
-    versionScope
-      && shelfVersionStatus?.scope === versionScope
-      && shelfVersionStatus.dirty_count > 0,
+  const sectionCommit = sectionCommitAvailability({
+    label: currentShelf.label,
+    changeCount: versionScope && shelfVersionStatus?.scope === versionScope
+      ? shelfVersionStatus.dirty_count
+      : null,
+    unsavedCount: dirtyIds.size,
+  });
+  const renderSectionCommitButton = (scope: VersionScope) => (
+    <button
+      type="button"
+      className="dock-release"
+      disabled={!sectionCommit.enabled}
+      onClick={() => setCommitPanelScope(scope)}
+      title={sectionCommit.reason || `Preview ${currentShelf.label} changes and commit them locally; deploy separately`}
+    >
+      <Send size={15} />
+      Commit
+    </button>
   );
   const selectedMetadataTarget = selectedContentGroup ? stateTargetForGroup(selectedContentGroup) : null;
   const selectedMetadataTranslation = selectedMetadataTarget?.translation || null;
@@ -3140,6 +3303,42 @@ export default function App() {
     }
   };
 
+  /**
+   * Create a new Blog or Project from the open moment and continue writing it.
+   * Creation never commits: the new resource is an uncommitted local change
+   * that the owner reviews and commits from its section.
+   */
+  const createFromMoment = async (kind: 'blog' | 'project') => {
+    if (!selectedContentGroup || selectedContentGroup.kind !== 'moment' || relationshipBusy) return;
+    const busyKey = kind === 'blog' ? 'moment-create-blog' : 'moment-create-project';
+    setRelationshipBusy(busyKey);
+    setRelationshipError(null);
+    setCreationNotice(null);
+    try {
+      if (!await flushEditorRef.current()) return;
+      const created = await autosaveQueue.run(() => invoke<EditorDocument>(
+        kind === 'blog' ? 'create_blog_from_moment' : 'create_project_from_moment',
+        { slug: selectedContentGroup.slug },
+      ));
+      await reloadDocumentsAfterRelationship(created);
+      setEntityFilter(kind);
+      setSelectedSeriesId('');
+      setContentRailMode('files');
+      setContentRailPanel('parts');
+      setContentEditorOpen(true);
+      setCreationNotice(
+        `Created “${created.title}” in ${kind === 'blog' ? 'Blog' : 'Projects'} from this moment. `
+        + `It is saved locally but not committed; review it, then use Commit in ${kind === 'blog' ? 'Blog' : 'Projects'}.`,
+      );
+    } catch (reason) {
+      setRelationshipError(String(reason));
+      setError(String(reason));
+    } finally {
+      setRelationshipBusy('');
+    }
+  };
+  const writeMomentUpAsArticle = () => createFromMoment('blog');
+
   const openRelationTarget = (relation: ContentRelation) => {
     const target = relationTargetGroups.find((group) => (
       group.kind === relation.target_kind && group.slug === relation.target_slug
@@ -3292,6 +3491,7 @@ export default function App() {
         data-has-moments-background={updatesShellActive && momentsCoverImage ? 'true' : undefined}
         style={mainStyle}
       >
+        <WorkspaceSwitchNotice />
         {recoveryCopies.length > 0 && (
           <button type="button" onClick={() => { setRecoveryCopies(recovery.list()); setRecoveryCopiesOpen(true); }}>
             Local recovery copies ({recoveryCopies.length})
@@ -3495,7 +3695,7 @@ export default function App() {
                   <p className="attention-status" data-state={deploymentReadiness.state}>
                     {deploymentReadiness.message}
                   </p>
-                  {deliverySyncStatus && (
+                  {deliverySyncStatus && deliverySyncStatus.state !== 'not_configured' && (
                     <div className="attention-version-pair" aria-label="Local and deployed content versions">
                       <span>Local <b>{deliverySyncStatus.local_head.slice(0, 7)}</b></span>
                       <span>Deployed <b>{deliverySyncStatus.remote_head.slice(0, 7)}</b></span>
@@ -3712,16 +3912,16 @@ export default function App() {
                       const canExpandVisitors = trafficMode === 'human' || trafficMode === 'unique';
                       const expanded = canExpandVisitors && expandedTrafficItem === itemKey;
                       return (
+                        <div className="ranking-row" key={itemKey}>
                         <button
                         type="button"
-                        key={itemKey}
                         className={expanded ? 'traffic-result-row traffic-result-row--expanded' : 'traffic-result-row'}
                         aria-expanded={canExpandVisitors ? expanded : undefined}
                         onClick={() => {
                           if (canExpandVisitors) {
                             setExpandedTrafficItem((current) => current === itemKey ? null : itemKey);
                           } else {
-                            openShelf(item.content_type === 'episode' ? 'blog' : item.content_type as EntityFilter);
+                            openFeedbackContent(item.content_type, { title: item.title }, false);
                           }
                         }}
                       >
@@ -3775,7 +3975,7 @@ export default function App() {
                         {trafficMode !== 'human' && item.evidence.length > 0 && (
                           <span className="traffic-evidence">
                             {trafficMode === 'geo'
-                              ? groupEvidenceByAgent(item.evidence).map(({ agent, event, visits, subjects, hiddenSubjectCount, technicalVisits }) => (
+                              ? groupEvidenceByAgent(item.evidence).map(({ agent, event, visits, subjects, hiddenSubjectCount }) => (
                                   <span className="traffic-agent-group" key={agent}>
                                     <span className="traffic-agent-heading">
                                       <strong>{agent}</strong>
@@ -3802,7 +4002,6 @@ export default function App() {
                                       </span>
                                     )}
                                     <span className="traffic-agent-notes">
-                                      {technicalVisits > 0 && <small>{technicalVisits} asset requests hidden</small>}
                                       {hiddenSubjectCount > 0 && <small>+{hiddenSubjectCount} more pages</small>}
                                       {subjects.every((subject) => !['ai_query', 'attributed_topic', 'keyword', 'search_query'].includes(subject.kind ?? '')) && (
                                         <small className="traffic-query-note">
@@ -3833,6 +4032,17 @@ export default function App() {
                           </span>
                         )}
                         </button>
+                        {(trafficMode === 'geo' || trafficMode === 'seo') && (
+                          <button
+                            type="button"
+                            className="ranking-row-action"
+                            title={`Open ${item.title} and run its local GEO check`}
+                            onClick={() => openFeedbackContent(item.content_type, { title: item.title }, true)}
+                          >
+                            GEO check
+                          </button>
+                        )}
+                        </div>
                       );
                     })}
                     {selectedTrafficDay.content.length === 0 && <p>No content traffic for this date.</p>}
@@ -3840,19 +4050,31 @@ export default function App() {
                 ) : dashboardRankingMetric ? (
                   <div className="recent-list">
                     {dashboardRankingItems.map((item, index) => (
-                      <button
-                        type="button"
-                        key={`${item.kind}-${item.slug}`}
-                        className="recent-row recent-row--ranking"
-                        onClick={() => openShelf(item.kind === 'episode' ? 'blog' : item.kind)}
-                      >
-                        <span className="rank-badge">#{index + 1}</span>
-                        <strong>{item.title}</strong>
-                        <small>{item.detail}</small>
-                        <small className="ranking-count">
-                          {item.count} {dashboardRankingNoun(dashboardRankingMetric, item.count)}
-                        </small>
-                      </button>
+                      <div className="ranking-row" key={`${item.kind}-${item.slug}`}>
+                        <button
+                          type="button"
+                          className="recent-row recent-row--ranking"
+                          title={`Open ${item.title}`}
+                          onClick={() => openFeedbackContent(item.kind, item, false)}
+                        >
+                          <span className="rank-badge">#{index + 1}</span>
+                          <strong>{item.title}</strong>
+                          <small>{item.detail}</small>
+                          <small className="ranking-count">
+                            {item.count} {dashboardRankingNoun(dashboardRankingMetric, item.count)}
+                          </small>
+                        </button>
+                        {editableMasonryContentKinds.has(item.kind) && (
+                          <button
+                            type="button"
+                            className="ranking-row-action"
+                            title={`Open ${item.title} and run its local GEO check`}
+                            onClick={() => openFeedbackContent(item.kind, item, true)}
+                          >
+                            GEO check
+                          </button>
+                        )}
+                      </div>
                     ))}
                     {dashboardRankingItems.length === 0 && (
                       <p className="activity-empty">
@@ -4038,8 +4260,10 @@ export default function App() {
                               type="button"
                               key={language}
                               className={translation?.id === selectedTranslation?.id ? 'active' : ''}
-                              disabled={saving || Boolean(syncingTranslation) || Boolean(generatingTranslation && !generating)}
-                              title={translation ? `Open ${language}` : `Generate ${language} with OpenAI`}
+                              disabled={saving || Boolean(syncingTranslation) || Boolean(generatingTranslation && !generating) || (!translation && !translationAvailability.enabled)}
+                              title={translation
+                                ? `Open ${language}`
+                                : translationAvailability.reason || `Generate ${language} with OpenAI (asks for confirmation)`}
                               onClick={() => {
                                 if (translation) {
                                   setLanguageByDocument((current) => ({
@@ -4048,7 +4272,7 @@ export default function App() {
                                   }));
                                   return;
                                 }
-                                void generateMissingTranslation(language);
+                                void requestMissingTranslation(language);
                               }}
                             >
                               {language}
@@ -4072,10 +4296,10 @@ export default function App() {
                           toolbarVisible={toolbarVisible}
                           reviewFindings={selectedReviewFindings}
                           onReviewFindingActivate={languageReview.openReport}
-                          onReviewFindingApplied={languageReview.resolveFinding}
                           slashCommands={editorAssist.slashCommands}
                           onImportImages={importImagesToSelected}
                           onSelectionAssist={requestSelectionAssist}
+                          selectionAssistDisabledReason={selectionAssistAvailability.reason}
                           onChange={patchSelectedTranslationContent}
                         />
                       ) : (
@@ -4110,22 +4334,11 @@ export default function App() {
           <div className="quick-dock moment-dock" aria-label="Moment shortcuts">
             <button type="button" className="moment-trigger" onClick={() => openCapture('moment')}><Aperture size={15} />Catch moment</button>
             <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
-            <button type="button" onClick={() => void openVersionPanel('moment')} title="Open Moments Git version status">
+            <button type="button" onClick={() => setCommitPanelScope('moment')} title="Open Moments Git version status">
               <GitBranch size={15} />
               Version
             </button>
-            {versionScope === 'moment' && scopedReleaseVisible && (
-              <button
-                type="button"
-                className="dock-release"
-                disabled={releasingScope === 'moment'}
-                onClick={() => void releaseCurrentScope('moment')}
-                title="Commit Moments changes locally; use Deploy content to update the website"
-              >
-                {releasingScope === 'moment' ? <LoaderCircle size={15} /> : <Send size={15} />}
-                {releasingScope === 'moment' ? 'Committing' : 'Commit'}
-              </button>
-            )}
+            {renderSectionCommitButton('moment')}
           </div>
         ) : shelfDockMode ? (
           <div className="quick-dock shelf-action-dock" aria-label={`${currentShelf.label} shortcuts`}>
@@ -4147,22 +4360,11 @@ export default function App() {
                 Create
               </button>
             )}
-            <button type="button" onClick={() => void openVersionPanel(shelfDockMode)} title={`Open ${currentShelf.label} Git version status`}>
+            <button type="button" onClick={() => setCommitPanelScope(shelfDockMode)} title={`Open ${currentShelf.label} Git version status`}>
               <GitBranch size={15} />
               Version
             </button>
-            {scopedReleaseVisible && (
-              <button
-                type="button"
-                className="dock-release"
-                disabled={releasingScope === shelfDockMode}
-                onClick={() => void releaseCurrentScope(shelfDockMode)}
-                title={`Commit and release ${currentShelf.label} changes only`}
-              >
-                {releasingScope === shelfDockMode ? <LoaderCircle size={15} /> : <Send size={15} />}
-                {releasingScope === shelfDockMode ? 'Committing' : 'Commit'}
-              </button>
-            )}
+            {renderSectionCommitButton(shelfDockMode)}
           </div>
         ) : isResumeShelf || (isMasonryShelf && !contentEditorOpen) || (isUpdateShelf && !contentEditorOpen) ? null : (
           <div className="save-dock" data-state={saveDockState}>
@@ -4237,107 +4439,14 @@ export default function App() {
           />
         )}
 
-        {versionPanelOpen && (
-          <div className="dialog-overlay" role="presentation" onClick={closeVersionPanel}>
-            <div
-              className="dialog-card version-card"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="version-card-title"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="dialog-headline">
-                <div className="new-project-badge">
-                  <GitBranch size={17} />
-                </div>
-                {renderLanguageCloseControls({
-                  disabled: versionLoading || Boolean(releasingScope),
-                  closeLabel: 'Close version status',
-                  closeSize: 15,
-                  onClose: closeVersionPanel,
-                })}
-              </div>
-              <header className="workspace-settings-section-header">
-                <h2 id="version-card-title">{chromeLanguage === 'zh' ? '提交历史' : 'Commit history'}</h2>
-                <p>{versionStatus?.scope_label || 'Section'}</p>
-              </header>
-              {versionLoading ? (
-                <div className="version-loading">
-                  <LoaderCircle size={15} />
-                  <span>Reading Git status...</span>
-                </div>
-              ) : versionError ? (
-                <div className="dialog-error" role="alert">
-                  <AlertCircle size={14} />
-                  <span>{versionError}</span>
-                </div>
-              ) : versionStatus ? (
-                <>
-                  <div className="version-summary">
-                    <div>
-                      <span>Branch</span>
-                      <strong>{versionStatus.branch}</strong>
-                    </div>
-                    <div>
-                      <span>HEAD</span>
-                      <strong>{versionStatus.head}</strong>
-                    </div>
-                    <div>
-                      <span>Changes</span>
-                      <strong>{versionStatus.dirty_count}</strong>
-                    </div>
-                  </div>
-                  <section className="version-section">
-                    <div className="version-section-head">
-                      <h3>{chromeLanguage === 'zh' ? '本地修改' : 'Working tree'}</h3>
-                      <div className="version-section-actions">
-                        {versionStatus.dirty_count > 0 && (
-                          <button
-                            type="button"
-                            className="version-release-button"
-                            disabled={Boolean(releasingScope)}
-                            onClick={() => void releaseCurrentScope(versionStatus.scope)}
-                          >
-                            {releasingScope === versionStatus.scope ? <LoaderCircle size={13} /> : <Send size={13} />}
-                            {releasingScope === versionStatus.scope ? 'Committing' : 'Commit'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {versionStatus.changes.length === 0 ? (
-                      <div className="version-empty">Clean working tree.</div>
-                    ) : (
-                      <div className="version-change-list">
-                        {versionStatus.changes.map((change) => (
-                          <div className="version-change-row" key={`${change.status}:${change.path}`}>
-                            <span>{change.status}</span>
-                            <strong>{change.path}</strong>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </section>
-                  <section className="version-section">
-                    <div className="version-section-head">
-                      <h3>{chromeLanguage === 'zh' ? '最近提交' : 'Recent commits'}</h3>
-                    </div>
-                    <div className="version-commit-list">
-                      {versionStatus.recent_commits.length === 0 && (
-                        <div className="version-empty">{chromeLanguage === 'zh' ? '还没有提交记录。' : 'No commits yet.'}</div>
-                      )}
-                      {versionStatus.recent_commits.map((commit) => (
-                        <div className="version-commit-row" key={commit.hash}>
-                          <code>{commit.hash}</code>
-                          <strong>{commit.subject}</strong>
-                          <span>{commit.relative_time}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </>
-              ) : null}
-            </div>
-          </div>
+        {commitPanelScope && (
+          <SectionCommitPanel
+            key={commitPanelScope}
+            scope={commitPanelScope}
+            unsavedCount={dirtyIds.size}
+            onClose={() => setCommitPanelScope(null)}
+            onCommitted={sectionCommitCompleted}
+          />
         )}
 
         {seriesEditingSlug && (
@@ -4372,7 +4481,7 @@ export default function App() {
                     <>
                       <SettingsPageIntro
                         eyebrow="Series settings"
-                        title="Overview"
+                        title={seriesSettingsPageTitle('overview')}
                         description="Set the name and short promise readers see before opening an episode."
                       />
                       <section className="resume-editor-section content-settings-section">
@@ -4406,7 +4515,7 @@ export default function App() {
                     <>
                       <SettingsPageIntro
                         eyebrow="Series settings"
-                        title="Cover"
+                        title={seriesSettingsPageTitle('cover')}
                         description="Choose the image that helps readers recognize this series in the blog index."
                       />
                       <section className="resume-editor-section content-settings-section content-settings-cover-section">
@@ -4478,7 +4587,7 @@ export default function App() {
                     <>
                       <SettingsPageIntro
                         eyebrow="Series settings"
-                        title="Publishing"
+                        title={seriesSettingsPageTitle('publishing')}
                         description="Change whether the episodes in this series are available on the public site."
                       />
                       <section className="resume-editor-section content-settings-section">
@@ -4499,7 +4608,7 @@ export default function App() {
                     <>
                       <SettingsPageIntro
                         eyebrow="Series settings"
-                        title="Source"
+                        title={seriesSettingsPageTitle('source')}
                         description="Inspect the stable identifier and the file that owns this series metadata."
                       />
                       <section className="resume-editor-section content-settings-section">
@@ -4578,33 +4687,48 @@ export default function App() {
                 </div>
                 {contentRailPanel === 'parts' && (
                   <>
-                  <div className="quick-dock content-editor-actions">
+                  <div className="quick-dock content-editor-actions" aria-label="Editor tools">
                     <MarkdownWorkspaceViewToggle
                       className="content-close content-view-toggle"
                       view={markdownWorkspaceView}
                       onChange={changeMarkdownWorkspaceView}
+                      showLabel
                     />
+                    {selected.entity_type === 'moment' && (
+                      <button
+                        type="button"
+                        className="content-close content-write-up-toggle"
+                        onClick={() => void writeMomentUpAsArticle()}
+                        disabled={relationshipBusy !== ''}
+                        title="Create a new blog article from this moment and open it (not committed)"
+                      >
+                        {relationshipBusy === 'moment-create-blog' ? <LoaderCircle size={15} /> : <PencilLine size={15} />}
+                        <span>Write it up as an article</span>
+                      </button>
+                    )}
                     {languageReviewAvailable && (
                       <button
                         type="button"
                         className={`content-close content-language-review-toggle ${languageReview.state.visible ? 'active' : ''}`}
-                        onClick={runCurrentLanguageReview}
-                        title={dirty ? 'Save this language before review' : 'Review the current language with DeepSeek'}
-                        aria-label="Review current language with DeepSeek"
-                        disabled={dirty || reviewRunning}
+                        onClick={() => void runCurrentLanguageReview()}
+                        title={dirty
+                          ? 'Save this language before review'
+                          : reviewAvailability.reason || 'Review the current language with DeepSeek (paid; asks for confirmation)'}
+                        disabled={dirty || reviewRunning || !reviewAvailability.enabled}
                       >
                         {reviewRunning ? <LoaderCircle size={15} /> : <FileSearch size={15} />}
+                        <span>Reader review · DeepSeek</span>
                       </button>
                     )}
                     <button
                       type="button"
                       className={`content-close content-geo-toggle ${geoPanelOpen ? 'active' : ''}`}
                       onClick={() => void openGeoPanel()}
-                      title="Run AI/GEO content check"
-                      aria-label="Run AI/GEO content check"
+                      title="Run the local AI/GEO readiness check (no AI provider is called)"
                       disabled={!selectedTranslation || geoLoading}
                     >
                       {geoLoading ? <LoaderCircle size={15} /> : <Search size={15} />}
+                      <span>GEO check</span>
                     </button>
                     <button
                       type="button"
@@ -4612,9 +4736,9 @@ export default function App() {
                       aria-pressed={toolbarVisible}
                       onClick={toggleToolbar}
                       title={toolbarVisible ? 'Hide formatting toolbar' : 'Show formatting toolbar'}
-                      aria-label={toolbarVisible ? 'Hide formatting toolbar' : 'Show formatting toolbar'}
                     >
                       <Type size={15} />
+                      <span>Toolbar</span>
                     </button>
                   </div>
                   <span className="content-editor-save-status" role="status">
@@ -4637,6 +4761,15 @@ export default function App() {
                 <div className="error" role="alert">
                   The source changed on disk. Your draft is retained.
                   <button type="button" onClick={() => setConflictReviewOpen(true)}>Review conflict</button>
+                </div>
+              )}
+              {creationNotice && (
+                <div className="creation-notice" role="status">
+                  <CheckCircle2 size={14} aria-hidden="true" />
+                  <span>{creationNotice}</span>
+                  <button type="button" onClick={() => setCreationNotice(null)} aria-label="Dismiss notice">
+                    <X size={13} />
+                  </button>
                 </div>
               )}
               {(saveFailed || metadataError) && !sourceConflict && (
@@ -4773,8 +4906,10 @@ export default function App() {
                               type="button"
                               className={aiTranslationBusy ? 'active' : ''}
                               onClick={() => void syncCounterpartTranslation()}
-                              title={counterpartDirty ? `Save ${counterpartLanguage} before syncing it from ${selectedTranslation?.language}` : aiTranslationTitle}
-                              disabled={saving || aiTranslationBusy || counterpartDirty}
+                              title={counterpartDirty
+                                ? `Save ${counterpartLanguage} before syncing it from ${selectedTranslation?.language}`
+                                : translationAvailability.reason || `${aiTranslationTitle} · OpenAI (asks for confirmation)`}
+                              disabled={saving || aiTranslationBusy || counterpartDirty || !translationAvailability.enabled}
                             >
                               <strong>
                                 {aiTranslationBusy
@@ -4787,8 +4922,10 @@ export default function App() {
                                   : counterpartTranslation
                                     ? `${pendingSourceChanges?.affected || 0} changed block${pendingSourceChanges?.affected === 1 ? '' : 's'} · preserve the rest`
                                     : `Save ${selectedTranslation?.language} and create ${counterpartLanguage}`}
+                                {' · OpenAI'}
                               </small>
                             </button>
+                            <PaidAiUnavailableHint kind="translation" />
                           </div>
                         )}
                       </>
@@ -4798,22 +4935,22 @@ export default function App() {
                     <section className="content-sidebar-review" aria-label="DeepSeek reader review">
                       <div>
                         <FileSearch size={14} />
-                        <span>Reader review</span>
+                        <span>Reader review · DeepSeek</span>
                       </div>
                       <button
                         type="button"
-                        disabled={dirty || reviewRunning}
-                        title={dirty ? 'Save this language before review' : undefined}
-                        onClick={runCurrentLanguageReview}
+                        disabled={dirty || reviewRunning || !reviewAvailability.enabled}
+                        title={dirty ? 'Save this language before review' : reviewAvailability.reason || 'DeepSeek · asks for confirmation'}
+                        onClick={() => void runCurrentLanguageReview()}
                       >
                         <strong>{reviewRunning ? 'Reviewing…' : 'Current language'}</strong>
                         <small>{selectedTranslation?.language} · saved source</small>
                       </button>
                       <button
                         type="button"
-                        disabled={reviewScopeDirty || reviewRunning}
-                        title={reviewScopeDirty ? 'Save all target documents before review' : undefined}
-                        onClick={runResourceLanguageReview}
+                        disabled={reviewScopeDirty || reviewRunning || !reviewAvailability.enabled}
+                        title={reviewScopeDirty ? 'Save all target documents before review' : reviewAvailability.reason || 'DeepSeek · asks for confirmation'}
+                        onClick={() => void runResourceLanguageReview()}
                       >
                         <strong>
                           {selected?.entity_type === 'episode' ? 'Complete series' : 'Complete article'}
@@ -4824,6 +4961,7 @@ export default function App() {
                             : `${reviewScopeDocuments.length} Markdown part${reviewScopeDocuments.length === 1 ? '' : 's'}`}
                         </small>
                       </button>
+                      <PaidAiUnavailableHint kind="reader_review" />
                     </section>
                   )}
                 </aside>
@@ -4860,10 +4998,10 @@ export default function App() {
                           }}
                           reviewFindings={selectedReviewFindings}
                           onReviewFindingActivate={languageReview.openReport}
-                          onReviewFindingApplied={languageReview.resolveFinding}
                           slashCommands={editorAssist.slashCommands}
                           onImportImages={importImagesToSelected}
                           onSelectionAssist={requestSelectionAssist}
+                          selectionAssistDisabledReason={selectionAssistAvailability.reason}
                           onChange={patchSelectedTranslationContent}
                         />
                       ) : (
@@ -4903,12 +5041,7 @@ export default function App() {
                       <div className="resume-editor-body content-settings-body">
                         <aside className="resume-editor-outline content-settings-sidebar">
                           <SettingsPageNavigation
-                            items={contentSettingsPages.filter((page) => (
-                              (page.id !== 'cover' || Boolean(selectedMetadataCoverLabel))
-                              && (page.id !== 'discovery' || selectedContentGroup.kind === 'blog')
-                              && (page.id !== 'links' || selectedContentGroup.kind === 'project')
-                              && (page.id !== 'relations' || selectedContentGroup.kind === 'blog' || selectedContentGroup.kind === 'moment')
-                            ))}
+                            items={contentSettingsPagesFor(selectedContentGroup.kind, Boolean(selectedMetadataCoverLabel))}
                             activePage={contentSettingsPage}
                             onChange={setContentSettingsPage}
                             label={`${selected.entity_type} settings pages`}
@@ -4920,7 +5053,7 @@ export default function App() {
                               <>
                                 <SettingsPageIntro
                                   eyebrow={`${selected.entity_type} settings`}
-                                  title="Overview"
+                                  title={contentSettingsPageTitle('overview')}
                                   description="Set the promise readers see in listings, search results, and the page header."
                                 />
                                 <section className="resume-editor-section content-settings-section">
@@ -5007,7 +5140,7 @@ export default function App() {
                               <>
                                 <SettingsPageIntro
                                   eyebrow={`${selected.entity_type} settings`}
-                                  title="Cover"
+                                  title={contentSettingsPageTitle('cover')}
                                   description="Choose the visual readers use to recognize this page before they open it."
                                 />
                                 <section className="resume-editor-section content-settings-section content-settings-cover-section">
@@ -5114,8 +5247,8 @@ export default function App() {
                             {contentSettingsPage === 'links' && selectedContentGroup.kind === 'project' && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow="Project settings"
-                                  title="Links"
+                                  eyebrow={`${selected.entity_type} settings`}
+                                  title={contentSettingsPageTitle('links')}
                                   description="Connect the project page to the places where readers can inspect the work or try it."
                                 />
                                 <section className="resume-editor-section content-settings-section">
@@ -5150,8 +5283,8 @@ export default function App() {
                             {contentSettingsPage === 'discovery' && selectedContentGroup.kind === 'blog' && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow="Blog discovery"
-                                  title="Project, resources, and image credit"
+                                  eyebrow={`${selected.entity_type} settings`}
+                                  title={contentSettingsPageTitle('discovery')}
                                   description="Connect this article to the work behind it, then preserve that identity across the page, search previews, and downloaded images."
                                 />
                                 <ArticleDiscoverySettings
@@ -5173,7 +5306,7 @@ export default function App() {
                               <>
                                 <SettingsPageIntro
                                   eyebrow={`${selected.entity_type} settings`}
-                                  title="Relations"
+                                  title={contentSettingsPageTitle('relations')}
                                   description="Convert durable notes into publishable resources, or keep independent resources connected by typed source relations."
                                 />
                                 {selectedContentGroup.kind === 'blog' && (
@@ -5231,7 +5364,7 @@ export default function App() {
                                     <section className="resume-editor-section content-settings-section">
                                       <div className="content-settings-section-heading">
                                         <h3>Create from this moment</h3>
-                                        <p>Create a new resource with fresh item identity, clone this moment body, and add an evolution relation from the moment.</p>
+                                        <p>Create a new resource with fresh item identity, clone this moment body, and add an evolution relation from the moment. Nothing is committed; the new resource opens for editing.</p>
                                       </div>
                                       <div className="content-settings-command-row">
                                         <Button
@@ -5240,12 +5373,7 @@ export default function App() {
                                           className="content-settings-action"
                                           disabled={relationshipBusy !== ''}
                                           loading={relationshipBusy === 'moment-create-blog'}
-                                          onClick={() => void runRelationshipCommand(
-                                            'moment-create-blog',
-                                            'create_blog_from_moment',
-                                            { slug: selectedContentGroup.slug },
-                                            'overview',
-                                          )}
+                                          onClick={() => void createFromMoment('blog')}
                                         >
                                           <FileText size={15} />
                                           New blog
@@ -5256,12 +5384,7 @@ export default function App() {
                                           className="content-settings-action"
                                           disabled={relationshipBusy !== ''}
                                           loading={relationshipBusy === 'moment-create-project'}
-                                          onClick={() => void runRelationshipCommand(
-                                            'moment-create-project',
-                                            'create_project_from_moment',
-                                            { slug: selectedContentGroup.slug },
-                                            'overview',
-                                          )}
+                                          onClick={() => void createFromMoment('project')}
                                         >
                                           <FolderPlus size={15} />
                                           New project
@@ -5301,7 +5424,7 @@ export default function App() {
                               <>
                                 <SettingsPageIntro
                                   eyebrow={`${selected.entity_type} settings`}
-                                  title="Publishing"
+                                  title={contentSettingsPageTitle('publishing')}
                                   description={selectedContentGroup.kind === 'moment'
                                     ? 'Manage progress and public visibility as independent Moment states.'
                                     : 'Manage the authored lifecycle and public visibility without collapsing them into one field.'}
@@ -5342,7 +5465,7 @@ export default function App() {
                               <>
                                 <SettingsPageIntro
                                   eyebrow={`${selected.entity_type} settings`}
-                                  title="Source"
+                                  title={contentSettingsPageTitle('source')}
                                   description="Inspect the stable identifiers and authored file behind this page."
                                 />
                                 <section className="resume-editor-section content-settings-section">
@@ -5416,19 +5539,19 @@ export default function App() {
           state={languageReview.state}
           onClose={languageReview.close}
           onRetry={languageReview.retry}
-          onFindingOpen={(result, finding) => queueReviewFindingAction(result, finding, 'focus')}
-          onFindingApply={(result, finding) => queueReviewFindingAction(result, finding, 'apply')}
+          onFindingOpen={focusReviewFinding}
+          onFindingPreview={previewReviewSuggestion}
+        />
+        <ReviewSuggestionDialog
+          state={reviewSuggestion}
+          markdown={reviewSuggestionMarkdown}
+          onReplacementChange={(replacement) => dispatchReviewSuggestion({ type: 'replacementChanged', replacement })}
+          onConfirm={() => void applyReviewSuggestion()}
+          onCancel={() => dispatchReviewSuggestion({ type: 'cancelled' })}
         />
 
         {geoPanelOpen && (
-          <div className="dialog-overlay" role="presentation" onClick={() => setGeoPanelOpen(false)}>
-            <div
-              className="dialog-card geo-card"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="geo-card-title"
-              onClick={(event) => event.stopPropagation()}
-            >
+          <ModalLayer cardClassName="geo-card" labelledBy="geo-card-title" onClose={() => setGeoPanelOpen(false)}>
               <div className="dialog-headline">
                 <div className="new-project-badge">
                   <Bot size={17} />
@@ -5460,6 +5583,17 @@ export default function App() {
                       <p>{geoInsights.summary}</p>
                     </div>
                   </div>
+                  {Boolean(geoInsights.score_components?.length) && (
+                    <section className="geo-score-components" aria-label="How the score is calculated">
+                      {geoInsights.score_components?.map((component) => (
+                        <div className="geo-score-component" key={component.label}>
+                          <span>{component.label}</span>
+                          <strong>{component.points}/{component.max}</strong>
+                          <p>{component.reason}</p>
+                        </div>
+                      ))}
+                    </section>
+                  )}
                   <div className="geo-metric-grid">
                     {geoInsights.metrics.map((metric) => (
                       <div key={metric.label} title={metric.detail}>
@@ -5488,8 +5622,7 @@ export default function App() {
                   </div>
                 </>
               ) : null}
-            </div>
-          </div>
+          </ModalLayer>
         )}
       </main>
 

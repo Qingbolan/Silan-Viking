@@ -19,7 +19,7 @@ MCP tools come in four tiers; **mutability follows the tier**.
 | `context_brief()` | **Core**: returns a condensed brief of "what silan is currently thinking about" — so a new agent understands silan from day one |
 | `lint()` | Content health report (#11) |
 | `stats(uri, [section])` | Live interaction stats for an Item / chapter: views / likes / comments (#15) |
-| `visitors(uri)` | Visitor details for that content: fingerprint / IP / visitor_kind / referrer_kind (#15) |
+| `visitors(uri, show_network?)` | Anonymous visitor details for that content: fingerprint / visitor_kind / referrer_kind / coarse region / last_seen; IPs and precise location only with `show_network: true` (#15) |
 | `crawler_breakdown([uri])` | Aggregated by visitor kind: human / search engine / AI crawler; per-crawler scrape count (#15) |
 | `source_breakdown([uri])` | Aggregated by source: search / social / AI chat / direct / on-site referral (#15) |
 
@@ -59,7 +59,13 @@ MCP tools come in four tiers; **mutability follows the tier**.
 
 | MCP tool | Purpose |
 |---|---|
-| `capture(note, type)` | The agent captures one of the owner's thoughts during a conversation → opens a new-Item proposal (see §3.1) |
+| `capture(note, type)` | The agent captures one of the owner's thoughts during a conversation. One contract, decided by `type`: a content type (`idea` / `blog` / `project` / `episode` / `moment`) opens a new-Item proposal under `silan://resources/<type>/<slug>/` and never touches the working tree (see §3.1); no `type` (or `type=note`) is a private agent note written **directly** to `silan://agent/notes/<id>` — the same rule as `ctx_write`, no proposal, never published |
+
+> **Capture contract**: `agent/` is private memory and is written
+> directly; anything under `resources/` is published content and only
+> ever lands through a proposal branch. The result carries `mode:
+> "direct"` (with `created_uri` + `path`, `proposal_id: null`) or
+> `mode: "proposal"` (with `proposal_id`, `branch`, `created_uri`).
 
 ## Tier 2.5 — agent context: read and write `silan://agent/` directly (#12)
 
@@ -197,7 +203,18 @@ reverted, and never bleeds into a proposal branch.
 ### The proposal area = git branches
 
 `content/` is a git repo (per revision B "versioning via git" — same
-git line, no new dependency). Each agent `capture` / `propose`:
+git line, no new dependency). Each agent `propose` and each content-type
+`capture`:
+
+0. **Committed base check.** A proposal is built from main's last commit,
+   so a target Item (or its episode `series.toml`) that has uncommitted
+   working-tree files is refused before any branch is cut:
+   `cannot propose <uri>: it has uncommitted changes (<paths>) … commit
+   your changes in content/ first, then propose again`. Otherwise the
+   branch would draft against an Item main does not have (e.g. no
+   `item.toml`) and `accept` would stay blocked. The check lives in
+   `Workspace::create_proposal`, shared by MCP `propose` / `capture` and
+   CLI `silan proposal create`.
 
 1. `silan-viking-mcp` cuts a **proposal branch** `proposal/<id>` off
    `content/`'s main branch — `id` uses a **ULID** (time-sortable;
@@ -288,7 +305,11 @@ The correct flow: merge + validate happen in a **temporary worktree**
    auto-rebase (doesn't make content choices on behalf of humans).
 3. Staging merge succeeds → validation ②: run Parser::validate + SCHEMA
    against the merge result in the staging area.
-   Failure → error. Main is untouched.
+   Failure → error. Main is untouched. The error is written for the
+   owner, not the scanner: it names the failing detail and the next
+   steps — commit any working-tree files the proposal relies on and
+   `silan proposal rebase <id>`, or `silan proposal reject <id>`.
+   A merge conflict error likewise names `rebase` / `reject`.
 4. Validation ② passes → advance the main pointer **atomically** to
    that verified merge commit in the staging area
    (`git update-ref`). At this moment main becomes the "verified
@@ -445,8 +466,8 @@ detail). Variant set:
     "output": { "uri": "uri", "views": "integer", "likes": "integer", "comments": "integer", "updated_at": "string" }
   },
   "visitors": {
-    "input": { "uri": "uri", "limit": "integer?", "cursor": "string?" },
-    "output": { "visitors": [{ "visitor_id": "string", "ip_masked": "string", "visitor_kind": "human|search_bot|ai_bot|unknown", "referrer_kind": "string", "last_seen_at": "string" }], "next_cursor": "string?" }
+    "input": { "uri": "uri", "show_network": "boolean? (default false)", "limit": "integer?", "cursor": "string?" },
+    "output": { "visitors": [{ "visitor_id": "string", "ip_masked": "string (empty unless show_network)", "visitor_kind": "human|search_bot|ai_bot|unknown", "referrer_kind": "string", "last_seen_at": "string" }], "next_cursor": "string?" }
   },
   "crawler_breakdown": {
     "input": { "uri": "uri?" },
@@ -466,8 +487,8 @@ MCP never returns raw IP / full fingerprint; only masked fields, same as `08` §
 ```json
 {
   "capture": {
-    "input": { "note": "string", "type": "idea|blog|project|episode|resume|update", "lang": "string?", "title": "string?", "tags": ["string"] },
-    "output": { "proposal_id": "string", "branch": "proposal/<id>", "created_uri": "uri", "validation": "passed|failed", "issues": ["string"] }
+    "input": { "note": "string", "type": "note|idea|blog|project|episode|moment", "slug": "string?", "title": "string?" },
+    "output": { "mode": "direct|proposal", "proposal_id": "string|null", "branch": "proposal/<id>|null", "created_uri": "uri", "path": "string (direct only)", "hint": "string?" }
   },
   "propose": {
     "input": { "uri": "uri", "draft": "string", "lang": "string?", "message": "string?" },
@@ -497,8 +518,9 @@ MCP never returns raw IP / full fingerprint; only masked fields, same as `08` §
 ```
 
 `ctx_write.uri` must start with `silan://agent/`; otherwise the call
-returns `permission_denied`. `capture` / `propose` always return
-proposal info — never "published / merged".
+returns `permission_denied`. `propose` and content-type `capture`
+always return proposal info — never "published / merged"; a note
+`capture` returns the private `agent/` URI it wrote.
 
 ### initialize and MCP resources
 

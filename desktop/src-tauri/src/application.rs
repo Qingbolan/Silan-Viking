@@ -5,8 +5,8 @@ use crate::model::{
     DashboardItem, DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeployedStats,
     DeploymentPlan, DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorRelation,
     EditorTranslation, EngagementStats, EpisodeSeriesInput, EpisodeSeriesSource, GeoAction,
-    GeoEvidence, GeoInsightReport, GeoMetric, ImportedMediaAsset, InteractionComment,
-    InteractionDetails, InteractionLiker, MarkdownSelectionAssistAction,
+    GeoEvidence, GeoInsightReport, GeoMetric, GeoScoreComponent, ImportedMediaAsset,
+    InteractionComment, InteractionDetails, InteractionLiker, MarkdownSelectionAssistAction,
     MarkdownSelectionAssistInput, MarkdownSelectionAssistResult, MomentsCover, MomentsProfile,
     MomentsSettings, RemoteContentVersion, ResumeEntryInput, ResumePartSource, ResumeProfile,
     ResumeProfileSource, ResumeSection, ResumeSocialLink, StatsSyncReport, TopContentItem,
@@ -364,12 +364,28 @@ impl DesktopWorkspace {
         Ok(map_version_status(status))
     }
 
-    pub(crate) fn release_scope(&self, scope: &str) -> Result<VersionStatus, String> {
+    pub(crate) fn release_scope(
+        &self,
+        scope: &str,
+        message: &str,
+    ) -> Result<VersionStatus, String> {
         let status = self
             .delivery_control
-            .release_scope(ReleaseScope::parse(scope).map_err(|error| error.to_string())?)
+            .release_scope(
+                ReleaseScope::parse(scope).map_err(|error| error.to_string())?,
+                message,
+            )
             .map_err(|error| error.to_string())?;
         Ok(map_version_status(status))
+    }
+
+    pub(crate) fn release_file_diff(&self, scope: &str, path: &str) -> Result<String, String> {
+        self.delivery_control
+            .release_file_diff(
+                ReleaseScope::parse(scope).map_err(|error| error.to_string())?,
+                path,
+            )
+            .map_err(|error| error.to_string())
     }
 
     pub(crate) fn deployment_plan(&self) -> Result<DeploymentPlan, String> {
@@ -1090,6 +1106,16 @@ impl DesktopWorkspace {
                     label: action.label,
                     detail: action.detail,
                     evidence: action.evidence.into_iter().map(map_geo_evidence).collect(),
+                })
+                .collect(),
+            score_components: report
+                .score_components
+                .into_iter()
+                .map(|component| GeoScoreComponent {
+                    label: component.label,
+                    points: component.points.into(),
+                    max: component.max_points.into(),
+                    reason: component.reason,
                 })
                 .collect(),
         })

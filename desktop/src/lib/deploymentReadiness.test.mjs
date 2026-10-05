@@ -121,3 +121,14 @@ test('a new local workspace has no remote comparison or automatic pull prerequis
   assert.equal(result.canPull, false);
   assert.equal(automaticDeploymentPullKey({ state: 'not_configured', local_head: '', remote_head: '' }, 0), null);
 });
+
+test('an unreachable deployed site stops the comparing spinner with a friendly message', () => {
+  assert.equal(readiness({ localCommitCount: null, syncState: null }).state, 'comparing');
+  const state = readiness({
+    localCommitCount: null,
+    syncState: null,
+    remoteFailure: { kind: 'transient', message: 'Couldn’t reach the deployed site.' },
+  });
+  assert.equal(state.state, 'remote_unavailable');
+  assert.equal(state.message, 'Couldn’t reach the deployed site.');
+});

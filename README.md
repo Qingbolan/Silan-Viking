@@ -109,6 +109,15 @@ curl -fsSL https://raw.githubusercontent.com/Qingbolan/Silan-Context-System/main
 silan --version
 ```
 
+This is the `stable` channel: the latest GitHub Release (v1.0.0), verified
+against its `SHA256SUMS`. Moments, Desktop and other post-release features
+described below are only on `main`; install them with a verified source build
+(needs git, Rust and TideMark):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Qingbolan/Silan-Context-System/main/engine/install.sh | sh -s -- --channel main
+```
+
 The installer exposes equivalent commands at `silan`, `svk`, and
 `silan-viking`. The examples use `silan`.
 
@@ -162,8 +171,9 @@ The v1.0.0 Linux binary supports the CLI authoring and validation path above,
 but its release archive does not include every production deployment artifact.
 Use a full source checkout for that deployment path.
 
-See [engine/INSTALL.md](engine/INSTALL.md) for supported targets, version
-pinning, checksums, installation directories, and uninstall instructions.
+See [engine/INSTALL.md](engine/INSTALL.md) for channels, supported targets,
+version and ref pinning, checksums, installation directories, and uninstall
+instructions.
 
 ## Silan Viking Desktop
 

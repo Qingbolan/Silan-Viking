@@ -111,11 +111,9 @@ export const formatLocationDetail = (location: LocationDisplayInput) => {
   return details.join(' · ');
 };
 
-const isTechnicalTrafficSubject = (subject: string) => (
-  /\.(?:js|css)\.map(?:$|[?#])/i.test(subject)
-  || /(?:^|\/)assets\/.+\.(?:js|css|map)(?:$|[?#])/i.test(subject)
-);
-
+// Asset requests (bundles, fonts, images) never reach this evidence: the
+// backend classifies request resources at ingestion and in its stats
+// projection, so every subject here is a page or a machine-readable file.
 export const groupEvidenceByAgent = (evidence: TrafficEvidence[]) => {
   const grouped: Record<string, {
     visits: number;
@@ -141,16 +139,12 @@ export const groupEvidenceByAgent = (evidence: TrafficEvidence[]) => {
           ...value,
         }))
         .sort((left, right) => right.visits - left.visits || left.label.localeCompare(right.label));
-      const visibleSubjects = subjects.filter((subject) => !isTechnicalTrafficSubject(subject.label));
       return {
         agent,
         visits: group.visits,
         event: [...group.events].join(' · '),
-        subjects: visibleSubjects.slice(0, 6),
-        hiddenSubjectCount: Math.max(0, visibleSubjects.length - 6),
-        technicalVisits: subjects
-          .filter((subject) => isTechnicalTrafficSubject(subject.label))
-          .reduce((total, subject) => total + subject.visits, 0),
+        subjects: subjects.slice(0, 6),
+        hiddenSubjectCount: Math.max(0, subjects.length - 6),
       };
     })
     .sort((left, right) => right.visits - left.visits || left.agent.localeCompare(right.agent));

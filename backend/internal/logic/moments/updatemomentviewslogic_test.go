@@ -30,7 +30,7 @@ func TestMomentViewsReachStatsSnapshot(t *testing.T) {
 	if row.EntityID != request.ID || string(row.EntityType) != "moment" || row.LandingURL == nil || *row.LandingURL != request.LandingURL || row.Referrer == nil || *row.Referrer != request.Referrer {
 		t.Fatalf("incorrect observation: %+v", row)
 	}
-	snapshot, err := stats.NewStatsLogic(ctx, service).Snapshot()
+	snapshot, err := stats.NewStatsLogic(ctx, service).Snapshot(&types.StatsSnapshotRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -177,7 +177,11 @@ pub enum ProposalError {
     Unknown(String),
     /// The merge into the temporary worktree hit a conflict — the main
     /// branch was not touched (`08` §8.5).
-    #[error("proposal `{id}` conflicts with main: {detail}")]
+    #[error(
+        "proposal `{id}` conflicts with main and cannot be accepted ({detail}). \
+         Next steps: rebuild it on the current main with `silan proposal rebase {id}`, \
+         or discard it with `silan proposal reject {id}`. Main was not changed."
+    )]
     MergeConflict {
         /// The conflicting proposal.
         id: String,
@@ -186,7 +190,12 @@ pub enum ProposalError {
     },
     /// Validation ② of the merged result failed — the main branch was not
     /// touched (`03` §3.1).
-    #[error("proposal `{id}` failed post-merge validation: {detail}")]
+    #[error(
+        "proposal `{id}` cannot be accepted: the merged content does not validate ({detail}). \
+         Next steps: commit any files the proposal relies on that exist only in your \
+         working tree, then rebuild it on the current main with `silan proposal rebase {id}`; \
+         or discard it with `silan proposal reject {id}`. Main was not changed."
+    )]
     ValidationFailed {
         /// The proposal that failed validation.
         id: String,
@@ -217,6 +226,21 @@ pub enum ProposalError {
     WorkingTreeDirty {
         /// The proposal being accepted.
         id: String,
+    },
+    /// `create_proposal` was asked to draft against an Item whose files are
+    /// not committed on main. Proposals are built from the main commit, so
+    /// the draft would be accepted against an Item that does not exist there
+    /// (missing `item.toml`, Parts or `series.toml`) and stay blocked.
+    #[error(
+        "cannot propose `{target}`: it has uncommitted changes ({paths}). \
+         Proposals are built from the last commit on main, so commit your \
+         changes in content/ first, then propose again."
+    )]
+    UncommittedTarget {
+        /// The touched URI whose files are not committed.
+        target: String,
+        /// The uncommitted paths (relative to `content/`), comma-separated.
+        paths: String,
     },
 }
 

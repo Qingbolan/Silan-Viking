@@ -201,6 +201,23 @@ impl<'s> ProseTypeParser<'s> {
     }
 }
 
+/// Whether the Item carries the `sample: true` frontmatter marker that
+/// `silan init` writes on its example items. The marker is a lint-only hint,
+/// not a SCHEMA field, so it is read from the raw canonical frontmatter.
+fn is_seeded_sample(item: &Item) -> bool {
+    item.parts()
+        .iter()
+        .filter_map(Part::canonical_file)
+        .filter_map(|file| {
+            frontmatter::parse_yaml(&frontmatter::split(file.body()).frontmatter, "sample").ok()
+        })
+        .any(|map| {
+            map.get(serde_yaml::Value::String("sample".to_owned()))
+                .and_then(serde_yaml::Value::as_bool)
+                == Some(true)
+        })
+}
+
 /// Shared `validate` for prose types: check required frontmatter fields,
 /// required Parts, and enum legality. Returns graded [`Issue`]s.
 pub fn validate_prose(schema: &Schema, item: &Item, parsed: &Parsed) -> Vec<Issue> {
@@ -260,7 +277,10 @@ pub fn validate_prose(schema: &Schema, item: &Item, parsed: &Parsed) -> Vec<Issu
     }
 
     // A Part with only its canonical language is informational, not a fault.
-    for part in item.parts() {
+    // Example items seeded by `silan init` (`sample: true`) are placeholders
+    // the owner rewrites or deletes, so they are never asked for translations.
+    let is_sample = is_seeded_sample(item);
+    for part in item.parts().iter().filter(|_| !is_sample) {
         if part.files().len() == 1 {
             issues.push(Issue::info(
                 "canonical_lang_only",

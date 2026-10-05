@@ -86,7 +86,7 @@ fn mistyped_subcommand_lists_verbs_on_stderr() {
         "stderr must name the unknown subcommand: {stderr}"
     );
     assert!(
-        stderr.contains("silan stats show|visitors|crawlers|sources <uri>"),
+        stderr.contains("silan stats visitors <uri> [--show-network]"),
         "stderr must list the `stats` verb usage lines: {stderr}"
     );
     assert!(
@@ -283,5 +283,69 @@ fn valid_command_dispatches_normally() {
             && !stderr.contains("unknown `moment` subcommand")
             && !stderr.contains("unknown command `moment"),
         "`moment list` must reach the command, not the dispatch-error path: {stderr}"
+    );
+}
+
+#[test]
+fn every_command_has_its_own_help() {
+    // `silan <command> --help` must answer with that command's usage —
+    // never the global banner, never the "not initialised" project status.
+    for command in [
+        "init",
+        "guide",
+        "onboard",
+        "setup",
+        "doctor",
+        "uninstall",
+        "config",
+        "credentials",
+        "desktop",
+        "destop",
+        "completion",
+        "index",
+        "content",
+        "cover",
+        "media",
+        "relation",
+        "skill",
+        "episode",
+        "resume",
+        "blog",
+        "project",
+        "moment",
+        "tags",
+        "proposal",
+        "stats",
+        "mcp",
+        "site",
+    ] {
+        let (code, stdout, stderr) = run(&[command, "--help"]);
+        assert_eq!(code, 0, "`{command} --help` must exit 0: {stderr}");
+        assert!(
+            stdout.contains(&format!("silan {command} — verbs:")),
+            "`{command} --help` must print its own usage: {stdout}"
+        );
+        assert!(
+            !stdout.contains(BANNER_TAGLINE),
+            "`{command} --help` must not print the banner"
+        );
+    }
+    let (_, init_help, _) = run(&["init", "--help"]);
+    assert!(init_help.contains("--name <full name>"), "{init_help}");
+}
+
+#[test]
+fn relation_link_without_a_type_value_names_the_valid_kinds() {
+    let (code, stdout, stderr) = run(&["relation", "link", "a", "b", "--type"]);
+    assert_eq!(code, 1);
+    assert!(stdout.is_empty(), "{stdout}");
+    assert!(stderr.contains("`--type` needs a value"), "{stderr}");
+    assert!(
+        stderr.contains("evolved_into, evolved_from, documents, references, supersedes, part_of"),
+        "{stderr}"
+    );
+    assert!(
+        !stderr.contains("unknown `relation` subcommand"),
+        "{stderr}"
     );
 }

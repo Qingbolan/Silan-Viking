@@ -38,16 +38,39 @@ export const contentSettingsPages: Array<SettingsPageItem<ContentSettingsPage>> 
   { id: 'discovery', label: 'Discovery', description: 'Resources and image credit' },
   { id: 'links', label: 'Links', description: 'Repository and demo' },
   { id: 'relations', label: 'Relations', description: 'Convert and connect' },
-  { id: 'publishing', label: 'Visibility', description: 'Public or private' },
+  { id: 'publishing', label: 'Publishing', description: 'Visibility and placement' },
   { id: 'source', label: 'Source', description: 'Identifiers and files' },
 ];
 
 export const seriesSettingsPages: Array<SettingsPageItem<SeriesSettingsPage>> = [
   { id: 'overview', label: 'Overview', description: 'Title and summary' },
   { id: 'cover', label: 'Cover', description: 'Upload or generate' },
-  { id: 'publishing', label: 'Publishing', description: 'Series availability' },
+  { id: 'publishing', label: 'Publishing', description: 'Visibility and placement' },
   { id: 'source', label: 'Source', description: 'Identifier and file' },
 ];
+
+/**
+ * The settings pages one content kind shows. Shared pages (Overview,
+ * Relations, Publishing, Source) keep the same order and names for every
+ * kind; kind-specific pages slot in between.
+ */
+export function contentSettingsPagesFor(kind: ContentKind, hasCover: boolean) {
+  return contentSettingsPages.filter((page) => (
+    (page.id !== 'cover' || hasCover)
+    && (page.id !== 'discovery' || kind === 'blog')
+    && (page.id !== 'links' || kind === 'project')
+    && (page.id !== 'relations' || kind === 'blog' || kind === 'moment')
+  ));
+}
+
+/** A page heading is always its navigation label, so the two cannot drift. */
+export const contentSettingsPageTitle = (page: ContentSettingsPage) => (
+  contentSettingsPages.find((item) => item.id === page)?.label || page
+);
+
+export const seriesSettingsPageTitle = (page: SeriesSettingsPage) => (
+  seriesSettingsPages.find((item) => item.id === page)?.label || page
+);
 
 export const defaultArticleAttribution = (): ArticleAttribution => ({
   project_name: '',

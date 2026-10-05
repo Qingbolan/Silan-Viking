@@ -24,7 +24,7 @@ func NewVisitorsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Visitors
 	}
 }
 
-func (l *VisitorsLogic) Visitors(req *types.StatsRequest) (resp *types.VisitorsResponse, err error) {
+func (l *VisitorsLogic) Visitors(req *types.VisitorsRequest) (resp *types.VisitorsResponse, err error) {
 	// Delegate to the single StatsLogic implementation.
 	return NewStatsLogic(l.ctx, l.svcCtx).Visitors(req)
 }

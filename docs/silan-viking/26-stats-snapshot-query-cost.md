@@ -24,8 +24,9 @@ request ID. Historical interaction enrichment only queries missing geography,
 deduplicates IP parameters, retains the existing per-item time window, and uses
 the same SQL reduction.
 
-`TestSnapshotQueryBudgetDoesNotGrowWithAnonymousContent` verifies three SELECTs
-for both one and 100 non-project items with anonymous likes and complete geography.
+`TestSnapshotQueryBudgetDoesNotGrowWithAnonymousContent` verifies four SELECTs
+for both one and 100 non-project items with anonymous likes and complete geography
+(the fourth is the per-crawler asset aggregate, grouped by bot and path in SQL).
 Authenticated identities, project likers, comment author profiles, and historical
 geography may require additional lookups. Complete interaction output remains
 proportional to interaction history, and the database still evaluates eligible

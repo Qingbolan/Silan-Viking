@@ -1,7 +1,5 @@
-import type { AiEngineStatus } from '../lib/aiEngines';
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { invoke, isTauri } from '@tauri-apps/api/core';
 import {
   createCoverBrief,
   generateCoverAsset,
@@ -11,7 +9,8 @@ import {
   type CoverTarget,
 } from '../lib/coverGeneration';
 import { toWebviewMediaUrl } from '../lib/media';
-import type { ImportedMediaAsset, OpenAiCredentialStatus } from '../types';
+import type { ImportedMediaAsset } from '../types';
+import { usePaidAiGate } from './PaidAiGate';
 
 function CoverGenerationDialog({
   headline,
@@ -87,26 +86,8 @@ export function AiCoverGenerator({
     transitionCoverGeneration,
     initialCoverGenerationState,
   );
-  const [credential, setCredential] = React.useState<OpenAiCredentialStatus['state'] | 'loading' | 'unavailable'>('loading');
-
-  React.useEffect(() => {
-    if (!isTauri()) {
-      setCredential('unavailable');
-      return undefined;
-    }
-    let active = true;
-    void invoke<AiEngineStatus>('get_ai_engines')
-      .then(async (status) => {
-        const state = status.configured ? (status.settings.image ? 'ready' : 'missing') : (await invoke<OpenAiCredentialStatus>('get_openai_credentials')).state;
-        if (active) setCredential(state);
-      })
-      .catch(() => {
-        if (active) setCredential('unavailable');
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const paidAi = usePaidAiGate();
+  const availability = paidAi.availability('cover_generation');
 
   const candidateUrl = generation.asset
     ? toWebviewMediaUrl(generation.asset.local_path || generation.asset.uri)
@@ -115,13 +96,18 @@ export function AiCoverGenerator({
   const headlineLong = brief.language === 'zh' ? headlineLength > 28 : headlineLength > 70;
   const generating = generation.phase === 'generating';
   const canGenerate = Boolean(
-    credential === 'ready'
+    availability.enabled
     && brief.headline.trim()
     && brief.value.trim(),
   );
 
   const generate = async () => {
     if (!canGenerate || disabled || generating) return;
+    if (!await paidAi.confirm({
+      kind: 'cover_generation',
+      action: 'Generate a cover image',
+      scope: `the cover brief for “${brief.headline.trim()}” (${quality} quality, ${size})`,
+    })) return;
     dispatch({ type: 'started' });
     try {
       const asset = await generateCoverAsset(target, brief, {
@@ -170,19 +156,24 @@ export function AiCoverGenerator({
           <strong>XHS editorial method</strong>
         </div>
         <div className="ai-cover-header-actions">
-          {onConfigureOpenAi && (credential === 'missing' || credential === 'invalid') ? (
+          {availability.settingsFixable ? (
             <button
               type="button"
               className="ai-cover-credential"
-              data-state={credential}
+              data-state="missing"
               disabled={disabled}
-              onClick={onConfigureOpenAi}
+              title={availability.reason || undefined}
+              onClick={onConfigureOpenAi || paidAi.openSettings}
             >
-              {credential === 'missing' ? 'Configure image engine' : 'Update image engine'}
+              Configure image engine
             </button>
           ) : (
-            <span className="ai-cover-credential" data-state={credential}>
-              {credential === 'ready' ? 'Image engine ready' : credential === 'loading' ? 'Checking image engine' : 'Desktop only'}
+            <span
+              className="ai-cover-credential"
+              data-state={availability.enabled ? 'ready' : 'loading'}
+              title={availability.reason || undefined}
+            >
+              {availability.enabled ? `${paidAi.providerLabel('cover_generation')} ready` : availability.reason}
             </span>
           )}
           <button
@@ -298,6 +289,7 @@ export function AiCoverGenerator({
           type="button"
           className="ai-cover-generate"
           disabled={!canGenerate || disabled || generating}
+          title={availability.reason || 'Generate with OpenAI (paid; asks for confirmation)'}
           onClick={() => void generate()}
         >
           {generating ? 'Generating' : generation.asset ? 'Regenerate' : 'Generate cover'}

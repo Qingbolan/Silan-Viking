@@ -81,8 +81,9 @@ commit、Tide coordinate、源码状态和二进制 SHA-256 记录在：
 ./engine/install-dev.sh --skip-tests   # 仅限明确的快速本地迭代，交付前不能使用
 ```
 
-`engine/install.sh` 面向发布版用户，会下载 GitHub Release；它不保证包含 main
-分支尚未发布的功能。`packaging/release/dev-install-local.sh` 用于同时构建 CLI
+`engine/install.sh` 面向终端用户，有两个显式 channel：默认 `stable` 下载 GitHub
+Release 并按 `SHA256SUMS` 校验，不包含 main 分支尚未发布的功能；`--channel main
+[--ref REF]` clone 仓库后调用 `engine/install-dev.sh` 做已验证的源码构建。`packaging/release/dev-install-local.sh` 用于同时构建 CLI
 和 macOS Desktop，不是引擎重装的替代入口。
 
 Desktop 命令有两个不可混用的生命周期：

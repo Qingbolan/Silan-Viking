@@ -271,7 +271,7 @@ by the skill body, and the body translates "what he's doing" into
   |---|---|
   | Surveying existing content ("what projects do I have in progress") | list(type, filter) — structured listing with status |
   | Searching "have I written about this topic" | recall(query) — semantic search |
-  | Voicing a half-formed thought | capture(note, type) — start a proposal; do not land directly |
+  | Voicing a half-formed thought | capture(note, type) — a content type starts a proposal under resources/ (never lands directly); no type saves a private agent/notes/ note directly |
   | Wanting to think one idea deeper, into an article | recall first for related old Items; then propose |
   | Wanting to push some project / idea forward | propose anchored to the matching Part (progress etc.) |
   | Asking whether an article is clear, attractive, actionable, rigorous, or awkward | run `silan blog reader-review <slug>` / `silan episode series reader-review <series>` only after confirming DeepSeek review is intended |

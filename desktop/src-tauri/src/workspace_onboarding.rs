@@ -143,6 +143,54 @@ pub(crate) fn bootstrap_status() -> DesktopBootstrapStatus {
     }
 }
 
+/// One workspace row of the desktop workspace switcher.
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct WorkspaceSwitcherEntry {
+    pub(crate) project_root: String,
+    pub(crate) project_name: String,
+    pub(crate) last_opened_at: u64,
+    pub(crate) available: bool,
+}
+
+/// The active workspace, recently opened alternatives, and the workspace this
+/// launch replaced (when a CLI launch from another directory switched it).
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct WorkspaceSwitcherState {
+    pub(crate) current: Option<WorkspaceSwitcherEntry>,
+    pub(crate) recent: Vec<WorkspaceSwitcherEntry>,
+    pub(crate) replaced: Option<WorkspaceSwitcherEntry>,
+}
+
+fn switcher_entry(workspace: workspace_runtime::RecentWorkspace) -> WorkspaceSwitcherEntry {
+    WorkspaceSwitcherEntry {
+        available: workspace.project_root.join("silan-viking.toml").is_file(),
+        project_root: workspace.project_root.display().to_string(),
+        project_name: workspace.project_name,
+        last_opened_at: workspace.last_opened_at,
+    }
+}
+
+pub(crate) fn workspace_switcher_state() -> Result<WorkspaceSwitcherState, String> {
+    let current_root = workspace_runtime::active_project_root()
+        .map(|root| fs::canonicalize(&root).unwrap_or(root));
+    let mut current = None;
+    let mut recent = Vec::new();
+    for workspace in workspace_runtime::recent_workspaces()? {
+        let root = fs::canonicalize(&workspace.project_root)
+            .unwrap_or_else(|_| workspace.project_root.clone());
+        if current_root.as_ref() == Some(&root) {
+            current = Some(switcher_entry(workspace));
+        } else {
+            recent.push(switcher_entry(workspace));
+        }
+    }
+    Ok(WorkspaceSwitcherState {
+        current,
+        recent,
+        replaced: workspace_runtime::replaced_workspace_notice().map(switcher_entry),
+    })
+}
+
 pub(crate) fn verify_repository_access(
     input: RepositoryAccessInput,
 ) -> Result<RepositoryAccessResult, String> {
