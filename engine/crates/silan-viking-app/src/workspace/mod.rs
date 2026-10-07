@@ -10,6 +10,8 @@
 //! the SQLite sink (`01` §1.5.0). Adapters never `new` a parser themselves.
 
 mod scan;
+mod services;
+pub use services::WorkspaceServices;
 
 pub use scan::{ScanError, ScanReport, ScannedAsset, ScannedSeries};
 

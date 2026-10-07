@@ -760,6 +760,36 @@ This main chain is the M5/M6 acceptance target: `scan -> item.kind
 -> parser_for -> parse -> validate -> mapper_for -> map -> sink`.
 Missing any one link is "parser/sync design not done".
 
+#### Operation-scoped use-case assembly
+
+`WorkspaceServices` (`app/src/workspace/services.rs`) assembles editing, capture,
+relationships, media, covers, attribution, insights and delivery around one
+validated `Arc<Workspace>`. This is an explicit factory with typed methods;
+there is no string-based service locator or runtime content-type registration.
+`ParserRegistry` and `MapperRegistry` remain separate closed strategy families.
+
+Public standalone `open(...)` constructors remain supported. Composite services
+also share their workspace internally, so `WorkspaceContent` does not reopen the
+same Schema for its `ContentEditor`, and cover/attribution services do not rebuild
+nested workspaces. The schema snapshot lasts for one operation or session.
+Reopening observes schema changes. Scans, source documents and database values
+remain live reads; this introduces no global content cache.
+
+The Desktop authoring adapter uses `WorkspaceServices`. Delivery commands use
+`application/delivery.rs::DesktopDelivery` directly, assembling only the engine
+`DeliveryControl` required for Git/deployment work. Tauri command names and DTOs
+are unchanged. Delivery queries no longer initialize analytics or media services.
+
+A reproducible synthetic comparison is available with:
+
+```sh
+cargo run --manifest-path engine/Cargo.toml -p silan-viking-app --example workspace_assembly --locked
+```
+
+The comparison measures eight independent public constructors against one
+factory producing the same eight use cases, with a temporary fixture Schema.
+It does not measure whole-application latency or deployment throughput.
+
 #### Type-ownership table
 
 | Type | crate / module | Visibility | Notes |

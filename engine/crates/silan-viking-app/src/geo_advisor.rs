@@ -90,10 +90,22 @@ impl GeoAdvisor {
         content_root: impl AsRef<Path>,
         db_path: impl AsRef<Path>,
     ) -> Result<Self, GeoAdvisorError> {
-        Ok(Self {
-            workspace: WorkspaceContent::open(content_root)?,
-            db_path: db_path.as_ref().to_path_buf(),
-        })
+        let workspace =
+            crate::Workspace::open(content_root).map_err(crate::WorkspaceContentError::from)?;
+        Ok(Self::from_workspace(
+            std::sync::Arc::new(workspace),
+            db_path.as_ref(),
+        ))
+    }
+
+    pub(crate) fn from_workspace(
+        workspace: std::sync::Arc<crate::Workspace>,
+        db_path: &Path,
+    ) -> Self {
+        Self {
+            workspace: WorkspaceContent::from_workspace(workspace),
+            db_path: db_path.to_path_buf(),
+        }
     }
 
     pub fn analyze_translation(

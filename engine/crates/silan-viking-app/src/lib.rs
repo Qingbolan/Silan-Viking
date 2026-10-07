@@ -158,7 +158,7 @@ pub use website_insights::{
     CrawlerSummary, DailyTraffic, DashboardSnapshot, FreshnessState, RecentContentItem,
     StatsFreshness, StatsSummary, TrafficEvidence, WebsiteInsights, WebsiteInsightsError,
 };
-pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace};
+pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace, WorkspaceServices};
 pub use workspace_content::{
     ArticleAttribution, ArticleResource, CreateTranslationInput, DeletePrivateResourceInput,
     DeletedPrivateResource, EditableDocument, EditableEntry, EditablePart, EditableSection,

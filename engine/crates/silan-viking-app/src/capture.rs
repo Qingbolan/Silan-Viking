@@ -9,6 +9,7 @@ use serde_yaml::{Mapping, Value};
 use silan_viking_base::{ItemId, PartId};
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 use tempfile::Builder;
 use thiserror::Error;
 
@@ -126,7 +127,7 @@ struct SourceFiles {
 }
 
 pub struct ContentCreator {
-    workspace: Workspace,
+    workspace: Arc<Workspace>,
 }
 
 impl ContentCreator {
@@ -136,7 +137,11 @@ impl ContentCreator {
                 path: content_root.as_ref().display().to_string(),
                 detail: error.to_string(),
             })?;
-        Ok(Self { workspace })
+        Ok(Self::from_workspace(Arc::new(workspace)))
+    }
+
+    pub(crate) fn from_workspace(workspace: Arc<Workspace>) -> Self {
+        Self { workspace }
     }
 
     pub fn capture_idea_and_sync(

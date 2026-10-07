@@ -12,6 +12,7 @@ use silan_viking_content::{ContentKind, Item, Part, RelationType};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 
@@ -79,16 +80,21 @@ pub enum ContentRelationshipError {
 
 pub struct ContentRelationshipEditor {
     content_root: PathBuf,
-    workspace: Workspace,
+    workspace: Arc<Workspace>,
 }
 
 impl ContentRelationshipEditor {
     pub fn open(content_root: impl AsRef<Path>) -> Result<Self, ContentRelationshipError> {
-        let content_root = content_root.as_ref().to_path_buf();
-        Ok(Self {
-            workspace: Workspace::open(&content_root)?,
+        Ok(Self::from_workspace(Arc::new(Workspace::open(
             content_root,
-        })
+        )?)))
+    }
+
+    pub(crate) fn from_workspace(workspace: Arc<Workspace>) -> Self {
+        Self {
+            content_root: workspace.content_root().to_path_buf(),
+            workspace,
+        }
     }
 
     pub fn convert_blog_to_moment_and_sync(

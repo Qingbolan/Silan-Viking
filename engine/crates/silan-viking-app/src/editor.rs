@@ -12,6 +12,7 @@ use silan_viking_content::ContentKind;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 
@@ -187,7 +188,7 @@ impl EditorError {
 
 /// Application service for source-first local editing.
 pub struct ContentEditor {
-    workspace: Workspace,
+    workspace: Arc<Workspace>,
 }
 
 impl ContentEditor {
@@ -198,7 +199,11 @@ impl ContentEditor {
                 path: content_root.as_ref().display().to_string(),
                 detail: error.to_string(),
             })?;
-        Ok(Self { workspace })
+        Ok(Self::from_workspace(Arc::new(workspace)))
+    }
+
+    pub(crate) fn from_workspace(workspace: Arc<Workspace>) -> Self {
+        Self { workspace }
     }
 
     /// Read the current Markdown body and complete-file revision.

@@ -265,14 +265,22 @@ impl DeliveryControl {
         db_path: impl AsRef<Path>,
         _repo_root: impl AsRef<Path>,
     ) -> Result<Self, DeliveryControlError> {
-        Workspace::open(content_root.as_ref())
+        let workspace = Workspace::open(content_root)
             .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
-        GitRepo::open(content_root.as_ref())
+        Self::from_workspace(&workspace, db_path.as_ref())
+    }
+
+    pub(crate) fn from_workspace(
+        workspace: &Workspace,
+        db_path: &Path,
+    ) -> Result<Self, DeliveryControlError> {
+        let content_root = workspace.content_root();
+        GitRepo::open(content_root)
             .map_err(|error| DeliveryControlError::Repository(error.to_string()))?;
         Ok(Self {
-            content_root: content_root.as_ref().to_path_buf(),
-            db_path: db_path.as_ref().to_path_buf(),
-            bearer_token: workspace_stats_sync_token(content_root.as_ref()),
+            content_root: content_root.to_path_buf(),
+            db_path: db_path.to_path_buf(),
+            bearer_token: workspace_stats_sync_token(content_root),
         })
     }
 

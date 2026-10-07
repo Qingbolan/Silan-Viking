@@ -53,11 +53,18 @@ impl MediaLibrary {
         let content_root = content_root.as_ref().to_path_buf();
         // Opening the source use case validates SCHEMA and the workspace root.
         WorkspaceContent::open(&content_root)?;
-        let resources_root = content_root.join("resources");
-        Ok(Self {
+        Ok(Self::from_root(content_root))
+    }
+
+    pub(crate) fn from_workspace(workspace: &crate::Workspace) -> Self {
+        Self::from_root(workspace.content_root().to_path_buf())
+    }
+
+    fn from_root(content_root: PathBuf) -> Self {
+        Self {
+            resources_root: content_root.join("resources"),
             content_root,
-            resources_root,
-        })
+        }
     }
 
     pub fn import_asset(
@@ -184,6 +191,62 @@ impl MediaLibrary {
             .collect::<Result<Vec<_>, _>>()?;
         refs.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
         Ok(refs)
+    }
+
+    /// Resolve Markdown-relative and wiki media against the author's document.
+    /// Only public resource assets participate; ambiguous wiki basenames fail.
+    pub fn resolve_embed_reference(
+        &self,
+        source_path: &str,
+        reference: &str,
+    ) -> Result<MediaAssetRef, MediaLibraryError> {
+        if reference.starts_with(URI_PREFIX) {
+            return self.resolve_uri(reference);
+        }
+        let root = canonical_dir(&self.resources_root)?;
+        let source = self.content_root.join(source_path);
+        let parent = source
+            .parent()
+            .ok_or_else(|| MediaLibraryError::InvalidUri(source_path.to_owned()))?;
+        let parent = canonical_dir(parent)?;
+        if !parent.starts_with(&root) {
+            return Err(MediaLibraryError::InvalidUri(source_path.to_owned()));
+        }
+        let reference_path = Path::new(reference);
+        for candidate in [
+            parent.join(reference_path),
+            parent.join("assets").join(reference_path),
+            self.content_root.join(reference_path),
+        ] {
+            if let Ok(path) = candidate.canonicalize() {
+                if path.starts_with(&root) && path.is_file() {
+                    return self.asset_ref(&path);
+                }
+            }
+        }
+        if reference_path.components().count() != 1 {
+            return Err(MediaLibraryError::InvalidUri(reference.to_owned()));
+        }
+        let mut directories = vec![root];
+        let mut matches = Vec::new();
+        while let Some(directory) = directories.pop() {
+            for entry in fs::read_dir(&directory).map_err(|error| io_error(&directory, error))? {
+                let entry = entry.map_err(|error| io_error(&directory, error))?;
+                let kind = entry
+                    .file_type()
+                    .map_err(|error| io_error(&entry.path(), error))?;
+                if kind.is_dir() {
+                    directories.push(entry.path());
+                } else if kind.is_file() && entry.file_name() == reference_path.as_os_str() {
+                    matches.push(entry.path());
+                }
+            }
+        }
+        if matches.len() == 1 {
+            self.asset_ref(&matches[0])
+        } else {
+            Err(MediaLibraryError::InvalidUri(reference.to_owned()))
+        }
     }
 
     fn find_item_dir(&self, document_id: &str) -> Result<PathBuf, MediaLibraryError> {
@@ -432,5 +495,46 @@ fn missing_ref(uri: &str, tail: &str) -> MediaAssetRef {
         file_name,
         byte_count: 0,
         reference_status: MediaReferenceStatus::Missing,
+    }
+}
+
+#[cfg(test)]
+mod embed_reference_tests {
+    use super::*;
+    #[test]
+    fn embeds_resolve_relative_wiki_and_reject_ambiguity_or_private_paths() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path();
+        fs::create_dir_all(root.join("resources/blog/article/assets")).unwrap();
+        fs::create_dir_all(root.join("resources/blog/other/assets")).unwrap();
+        fs::create_dir_all(root.join("agent")).unwrap();
+        fs::write(root.join("resources/blog/article/assets/a.png"), b"a").unwrap();
+        fs::write(root.join("resources/blog/other/assets/b.png"), b"b").unwrap();
+        fs::write(root.join("agent/private.png"), b"private").unwrap();
+        let library = MediaLibrary::from_root(root.to_path_buf());
+        let source = "resources/blog/article/en.md";
+        assert_eq!(
+            library
+                .resolve_embed_reference(source, "assets/a.png")
+                .unwrap()
+                .uri,
+            "silan://resources/blog/article/assets/a.png"
+        );
+        assert_eq!(
+            library
+                .resolve_embed_reference(source, "b.png")
+                .unwrap()
+                .uri,
+            "silan://resources/blog/other/assets/b.png"
+        );
+        assert!(library
+            .resolve_embed_reference(source, "../../../agent/private.png")
+            .is_err());
+        assert!(library
+            .resolve_embed_reference(source, "private.png")
+            .is_err());
+        fs::create_dir_all(root.join("resources/project/assets")).unwrap();
+        fs::write(root.join("resources/project/assets/b.png"), b"b").unwrap();
+        assert!(library.resolve_embed_reference(source, "b.png").is_err());
     }
 }

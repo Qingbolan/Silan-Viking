@@ -12,6 +12,7 @@ use silan_viking_content::{ContentKind, PartShape};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
@@ -244,18 +245,23 @@ pub struct EditableEntry {
 /// only by mutation methods that must synchronize after an atomic source save.
 pub struct WorkspaceContent {
     content_root: PathBuf,
-    workspace: Workspace,
+    workspace: Arc<Workspace>,
     editor: ContentEditor,
 }
 
 impl WorkspaceContent {
     pub fn open(content_root: impl AsRef<Path>) -> Result<Self, WorkspaceContentError> {
-        let content_root = content_root.as_ref().to_path_buf();
-        Ok(Self {
-            workspace: Workspace::open(&content_root)?,
-            editor: ContentEditor::open(&content_root)?,
+        Ok(Self::from_workspace(Arc::new(Workspace::open(
             content_root,
-        })
+        )?)))
+    }
+
+    pub(crate) fn from_workspace(workspace: Arc<Workspace>) -> Self {
+        Self {
+            content_root: workspace.content_root().to_path_buf(),
+            editor: ContentEditor::from_workspace(Arc::clone(&workspace)),
+            workspace,
+        }
     }
 
     pub fn editable_workspace(&self) -> Result<EditableWorkspace, WorkspaceContentError> {

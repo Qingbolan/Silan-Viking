@@ -205,11 +205,19 @@ impl WebsiteInsights {
         content_root: impl AsRef<Path>,
         db_path: impl AsRef<Path>,
     ) -> Result<Self, WebsiteInsightsError> {
-        WorkspaceContent::open(content_root.as_ref())?;
-        crate::stats::ensure_cache_schema(db_path.as_ref())?;
+        let workspace =
+            crate::Workspace::open(content_root).map_err(crate::WorkspaceContentError::from)?;
+        Self::from_workspace(&workspace, db_path.as_ref())
+    }
+
+    pub(crate) fn from_workspace(
+        workspace: &crate::Workspace,
+        db_path: &Path,
+    ) -> Result<Self, WebsiteInsightsError> {
+        crate::stats::ensure_cache_schema(db_path)?;
         Ok(Self {
-            content_root: content_root.as_ref().to_path_buf(),
-            db_path: db_path.as_ref().to_path_buf(),
+            content_root: workspace.content_root().to_path_buf(),
+            db_path: db_path.to_path_buf(),
         })
     }
 

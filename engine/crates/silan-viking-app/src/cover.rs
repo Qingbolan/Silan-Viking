@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use silan_viking_base::Namespace;
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::Arc;
 use thiserror::Error;
 
 const DEFAULT_RESULT_LIMIT: usize = 20;
@@ -176,7 +177,7 @@ pub enum CoverError {
 }
 
 pub struct CoverWorkspace {
-    workspace: Workspace,
+    workspace: Arc<Workspace>,
     content: WorkspaceContent,
     editor: ContentEditor,
     media: MediaLibrary,
@@ -184,15 +185,18 @@ pub struct CoverWorkspace {
 
 impl CoverWorkspace {
     pub fn open(content_root: impl AsRef<Path>) -> Result<Self, CoverError> {
-        let content_root = content_root.as_ref();
-        Ok(Self {
-            workspace: Workspace::open(content_root)
-                .map_err(|error| CoverError::Query(error.to_string()))?,
-            content: WorkspaceContent::open(content_root)?,
-            editor: ContentEditor::open(content_root)
-                .map_err(|error| CoverError::Query(error.to_string()))?,
-            media: MediaLibrary::open(content_root)?,
-        })
+        let workspace =
+            Workspace::open(content_root).map_err(|error| CoverError::Query(error.to_string()))?;
+        Ok(Self::from_workspace(Arc::new(workspace)))
+    }
+
+    pub(crate) fn from_workspace(workspace: Arc<Workspace>) -> Self {
+        Self {
+            content: WorkspaceContent::from_workspace(Arc::clone(&workspace)),
+            editor: ContentEditor::from_workspace(Arc::clone(&workspace)),
+            media: MediaLibrary::from_workspace(&workspace),
+            workspace,
+        }
     }
 
     /// Find Blog, Project, and series targets by human title, slug, or description.

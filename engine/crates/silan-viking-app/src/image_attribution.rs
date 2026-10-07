@@ -195,10 +195,16 @@ pub struct ArticleImageAttributionWorkspace {
 
 impl ArticleImageAttributionWorkspace {
     pub fn open(content_root: impl AsRef<Path>) -> Result<Self, ImageAttributionError> {
-        Ok(Self {
-            content: WorkspaceContent::open(content_root.as_ref())?,
-            media: MediaLibrary::open(content_root)?,
-        })
+        let workspace =
+            crate::Workspace::open(content_root).map_err(WorkspaceContentError::from)?;
+        Ok(Self::from_workspace(std::sync::Arc::new(workspace)))
+    }
+
+    pub(crate) fn from_workspace(workspace: std::sync::Arc<crate::Workspace>) -> Self {
+        Self {
+            media: MediaLibrary::from_workspace(&workspace),
+            content: WorkspaceContent::from_workspace(workspace),
+        }
     }
 
     /// Resolve the persisted Blog policy without touching image bytes.
