@@ -9,19 +9,39 @@ import './styles.css';
 import { createThemeSession } from './theme/composition';
 import { ThemeProvider } from './theme/ThemeProvider';
 
-const themeSession = createThemeSession(document, () => window.localStorage);
-void themeSession.initialize();
+export function mountApplication(ready: () => void, fail: (error: unknown) => void) {
+  const themeSession = createThemeSession(document, () => window.localStorage);
+  void themeSession.initialize();
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <ThemeProvider session={themeSession}>
-    <StartupExperience>
-      <WorkspaceBootstrapGate>
-        <PaidAiGateProvider>
-          <App />
-        </PaidAiGateProvider>
-      </WorkspaceBootstrapGate>
-    </StartupExperience>
-    </ThemeProvider>
-  </React.StrictMode>,
-);
+  ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+    <React.StrictMode>
+      <ApplicationBoundary onFailure={fail}>
+        <Ready onReady={ready} />
+        <ThemeProvider session={themeSession}>
+          <StartupExperience>
+            <WorkspaceBootstrapGate>
+              <PaidAiGateProvider>
+                <App />
+              </PaidAiGateProvider>
+            </WorkspaceBootstrapGate>
+          </StartupExperience>
+        </ThemeProvider>
+      </ApplicationBoundary>
+    </React.StrictMode>,
+  );
+}
+
+function Ready({ onReady }: { onReady: () => void }) {
+  React.useEffect(onReady, [onReady]);
+  return null;
+}
+
+class ApplicationBoundary extends React.Component<
+  { children: React.ReactNode; onFailure: (error: unknown) => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error) { this.props.onFailure(error); }
+  render() { return this.state.failed ? null : this.props.children; }
+}

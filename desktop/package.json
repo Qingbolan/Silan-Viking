@@ -13,7 +13,7 @@
     "test:navigation": "node --experimental-strip-types --test src/lib/workspaceNavigation.test.mjs",
     "test:desktop-window": "node --experimental-strip-types --test src/lib/desktopWindow.test.mjs",
     "test:shelf-interaction": "node --experimental-strip-types --test src/lib/shelfInteractionMode.test.mjs",
-    "test:startup-sequence": "esbuild src/lib/startupOrb.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/silan-startup-orb.test.mjs && node --experimental-strip-types --test src/lib/bootPrimer.test.mjs src/lib/startupSequence.test.mjs /tmp/silan-startup-orb.test.mjs",
+    "test:startup-sequence": "esbuild src/lib/startupOrb.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/silan-startup-orb.test.mjs && node --experimental-strip-types --test src/lib/ApplicationBootstrap.test.mjs src/lib/bootPrimer.test.mjs src/lib/startupSequence.test.mjs /tmp/silan-startup-orb.test.mjs",
     "test:language-review": "node --experimental-strip-types --test src/lib/languageReviewWorkflow.test.mjs src/lib/reviewSuggestion.test.mjs",
     "test:editor-workflows": "node --experimental-strip-types --test src/lib/media.test.mjs src/lib/captureDraft.test.mjs src/lib/markdownBlockDiff.test.mjs src/lib/translationSyncWorkflow.test.mjs src/lib/autosaveQueue.test.mjs src/lib/editorRecovery.test.mjs src/lib/nativeFileDrag.test.mjs src/components/editor/interaction/CaretGeometry.test.mjs",
     "test:deployment-readiness": "node --experimental-strip-types --test src/lib/deploymentReadiness.test.mjs src/lib/remoteStatus.test.mjs",
