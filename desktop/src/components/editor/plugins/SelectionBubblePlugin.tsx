@@ -1,4 +1,5 @@
 import React from 'react';
+import { WRAP_MEDIA_SELECTION } from '../media/MediaLayoutCommands';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, type TextFormatType } from 'lexical';
 import {
@@ -249,6 +250,7 @@ export function SelectionBubblePlugin({
           >
             <Copy size={14} />
           </button>
+          <button type="button" title="将选中的段落转为布局" onMouseDown={(event) => event.preventDefault()} onClick={() => { if (restore()) editor.dispatchCommand(WRAP_MEDIA_SELECTION, undefined); }}>布局</button>
           {onSelectionAssist && (
             <>
               <button

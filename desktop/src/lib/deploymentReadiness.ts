@@ -6,7 +6,6 @@ export type DeploymentReadinessState =
   | 'not_configured'
   | 'uncommitted'
   | 'comparing'
-  | 'not_configured'
   | 'remote_unavailable'
   | 'synchronized'
   | 'remote_ahead'

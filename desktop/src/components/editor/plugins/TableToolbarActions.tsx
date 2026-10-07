@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import type { LexicalEditor } from 'lexical';
 import {
   AlignCenter,
   AlignLeft,
@@ -21,11 +21,6 @@ import {
   type TableToolbarAction,
   type TableToolbarState,
 } from '../interaction/TableEditingController';
-import {
-  OverlayPositionController,
-  readEditorToolbarInset,
-  type OverlayPosition,
-} from '../interaction/OverlayPositionController';
 import { readEditorSnapshot } from '../model/MarkdownDocument';
 
 type TableToolbarButton = {
@@ -50,27 +45,12 @@ const buttons: TableToolbarButton[] = [
   { action: 'delete-table', icon: Trash2, label: 'Delete table', danger: true },
 ];
 
-const hiddenPosition: OverlayPosition = {
-  left: 0,
-  placement: 'above',
-  top: 0,
-  visible: false,
-};
-
-export function TableToolbarPlugin({
-  disabled,
-  offsetForMainToolbar,
-}: {
-  disabled: boolean;
-  offsetForMainToolbar: boolean;
-}) {
-  const [editor] = useLexicalComposerContext();
-  const controller = React.useMemo(() => new TableEditingController(editor), [editor]);
-  const [state, setState] = React.useState<TableToolbarState | null>(null);
-  const toolbarRef = React.useRef<HTMLDivElement | null>(null);
-  const [position, setPosition] = React.useState(hiddenPosition);
+export function useTableToolbar(editor: LexicalEditor | null) {
+  const controller = React.useMemo(() => editor ? new TableEditingController(editor) : null, [editor]);
+  const [state, setState] = React.useState<TableToolbarState | null>(() => controller?.readState() || null);
 
   React.useEffect(() => {
+    if (!editor || !controller) { setState(null); return; }
     const update = (next: TableToolbarState | null) => {
       setState((current) => (sameTableToolbarState(current, next) ? current : next));
     };
@@ -80,49 +60,16 @@ export function TableToolbarPlugin({
     });
   }, [controller, editor]);
 
-  React.useLayoutEffect(() => {
-    const toolbar = toolbarRef.current;
-    const root = editor.getRootElement()?.parentElement;
-    const cell = state ? editor.getElementByKey(state.cellKey) : null;
-    if (!state || !toolbar || !root || !cell) return undefined;
-    const mainToolbar = offsetForMainToolbar
-      ? root.parentElement?.querySelector<HTMLElement>('.novel-toolbar') || null
-      : null;
-    setPosition(hiddenPosition);
-    const positioning = new OverlayPositionController({
-      container: root,
-      observedElements: [cell, ...(mainToolbar ? [mainToolbar] : [])],
-      onPosition: setPosition,
-      options: { minTop: () => readEditorToolbarInset(root, offsetForMainToolbar) },
-      overlay: toolbar,
-      readAnchor: () => cell.getBoundingClientRect(),
-    });
-    positioning.connect();
-    return () => positioning.dispose();
-  }, [editor, offsetForMainToolbar, state]);
+  return { controller, state };
+}
 
-  if (!state || disabled) return null;
-
-  return (
-    <div
-      ref={toolbarRef}
-      className="lexical-table-toolbar"
-      data-placement={position.placement}
-      data-positioned={position.visible ? 'true' : 'false'}
-      role="toolbar"
-      aria-label="Table actions"
-      style={{
-        left: position.left,
-        top: position.top,
-        visibility: position.visible ? 'visible' : 'hidden',
-      }}
-    >
-      <span className="lexical-table-toolbar__context">
+/** Table commands share the caret toolbar; they do not own a floating surface. */
+export function TableToolbarActions({ controller, state }: { controller: TableEditingController; state: TableToolbarState }) {
+  return (<>
+      <span className="lexical-table-toolbar__context" title={`Row ${state.rowIndex + 1}/${state.rowCount} · Column ${state.columnIndex + 1}/${state.columnCount}`}>
         <TableCellsMerge size={14} />
         <span>
-          Row {state.rowIndex + 1}/{state.rowCount}
-          <i aria-hidden="true">·</i>
-          Column {state.columnIndex + 1}/{state.columnCount}
+          R{state.rowIndex + 1}<i aria-hidden="true">·</i>C{state.columnIndex + 1}
         </span>
       </span>
       <span className="lexical-table-toolbar__divider" aria-hidden="true" />
@@ -152,6 +99,5 @@ export function TableToolbarPlugin({
           );
         })}
       </div>
-    </div>
-  );
+  </>);
 }

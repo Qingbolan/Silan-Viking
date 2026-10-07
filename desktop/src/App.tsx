@@ -1,11 +1,17 @@
+import { MediaWorkspace } from './components/editor/media/MediaWorkspace';
+import { autoLayoutImportedMarkdown } from './components/editor/media/MediaLayoutSettings';
+import { NativeFileDragSession } from './lib/nativeFileDrag';
+import { AppShell } from './app/AppShell';
+import { EditorSession } from './app/authoring/EditorSession';
+import { useDeliverySession } from './app/delivery/useDeliverySession';
 import { pagePlugins } from './plugins/registry';
 import { PagePluginHost } from './plugins/PagePluginHost';
 import React from 'react';
 import { CaptureSubmission } from './lib/captureSubmission';
 import type { VideoCoverState } from './lib/videoCover';
 import { captureMarkdown } from './lib/captureDraft';
-import { AutosaveQueue, mergePersistedTranslations } from './lib/autosaveQueue';
-import { EditorRecovery, isSourceConflict, preserveDraftRevision, waitForSave } from './lib/editorRecovery';
+import { mergePersistedTranslations } from './lib/autosaveQueue';
+import { EditorRecovery, waitForSave } from './lib/editorRecovery';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
@@ -70,13 +76,9 @@ import { LanguageReviewPanel } from './components/LanguageReviewPanel';
 import { ReviewSuggestionDialog } from './components/ReviewSuggestionDialog';
 import { ModalLayer } from './components/ModalLayer';
 import { SectionCommitPanel } from './components/SectionCommitPanel';
-import { WorkspaceSwitchNotice } from './components/WorkspaceSwitcher';
 import { sectionCommitAvailability } from './lib/sectionCommit';
 import {
   classifyRemoteStatusError,
-  remoteStatusFailureVisible,
-  remoteStatusRetryDelay,
-  type RemoteStatusFailure,
 } from './lib/remoteStatus';
 import { PaidAiUnavailableHint, usePaidAiGate } from './components/PaidAiGate';
 import {
@@ -144,10 +146,7 @@ import {
   preferredMarkdownLanguages,
 } from './app/content/markdownLanguage';
 import {
-  automaticDeploymentPullKey,
   clearResolvedSynchronizationError,
-  deploymentReadinessFor,
-  type DeploymentPlanState,
 } from './lib/deploymentReadiness';
 import {
   buildDashboardRankingItems,
@@ -233,10 +232,6 @@ import type {
   ContentKind,
   ContentRelation,
   DashboardData,
-  DeliverySyncStatus,
-  DeploymentPlan,
-  DeployRunStatus,
-  DeployVerificationResult,
   DocumentLanguageAudit,
   EditorDocument,
   EditorTranslation,
@@ -310,18 +305,26 @@ const lifecycleButtonVariantFor = (tone: VisibilityAction['tone']) => tone;
 
 export default function App() {
   const [librarySeries, setLibrarySeries] = React.useState<LibrarySeriesSource[]>([]);
-  const [documents, setDocuments] = React.useState<EditorDocument[]>([]);
+  const [editorSession] = React.useState(() => new EditorSession(new EditorRecovery(window.localStorage)));
+  const editorSnapshot = React.useSyncExternalStore(editorSession.subscribe, editorSession.getSnapshot);
+  const mediaWorkspace = React.useMemo(() => new MediaWorkspace(editorSession, () => invoke<EditorDocument[]>('list_documents'), input => invoke<EditorDocument>('save_document', input), (sourcePath, references) => invoke<(string | null)[]>('resolve_media_embeds', { sourcePath, references }), target => {
+    const path = target.split('#')[0];
+    const document = editorSession.documents.find(doc => doc.translations.some(item => item.source_path === path));
+    const translation = document?.translations.find(item => item.source_path === path);
+    if (!document || !translation) return;
+    setSelectedId(document.id);
+    setLanguageByDocument(current => ({ ...current, [document.id]: translation.language }));
+    setScreen('content'); setContentRailMode('files'); setContentRailPanel('parts');
+    setContentEditorOpen(true);
+  }), [editorSession]);
+  const { documents, dirtyIds } = editorSnapshot;
+  const setDocuments = editorSession.updateDocuments;
+  const setDirtyIds = editorSession.updateDirtyIds;
+  const saving = editorSnapshot.save.phase === 'saving';
+  const saveFailed = editorSnapshot.save.phase === 'failed' || editorSnapshot.save.phase === 'conflict';
+  const sourceConflict = editorSnapshot.save.phase === 'conflict' ? editorSnapshot.save.conflict : null;
+  const setSourceConflict = editorSession.setConflict;
   const [dashboard, setDashboard] = React.useState<DashboardData | null>(null);
-  const [deploymentPlanLoad, setDeploymentPlanLoad] = React.useState<{
-    state: DeploymentPlanState;
-    plan: DeploymentPlan | null;
-    error: string | null;
-  }>({ state: 'loading', plan: null, error: null });
-  const deploymentPlan = deploymentPlanLoad.plan;
-  const [deliverySyncStatus, setDeliverySyncStatus] = React.useState<DeliverySyncStatus | null>(null);
-  /** A deployed-status failure shown only after transient retries are exhausted. */
-  const [remoteStatusFailure, setRemoteStatusFailure] = React.useState<RemoteStatusFailure | null>(null);
-  const [refreshingDeliveryStatus, setRefreshingDeliveryStatus] = React.useState(false);
   const [activityPage, setActivityPage] = React.useState<0 | 1>(0);
   const [deliveryPage, setDeliveryPage] = React.useState<0 | 1 | 2 | 3 | 4>(0);
   const [refreshingWorkspace, setRefreshingWorkspace] = React.useState(false);
@@ -330,12 +333,7 @@ export default function App() {
   const [dashboardRankingMetric, setDashboardRankingMetric] = React.useState<DashboardRankingMetric | null>(null);
   const [expandedTrafficItem, setExpandedTrafficItem] = React.useState<string | null>(null);
   const [freshnessTick, setFreshnessTick] = React.useState(0);
-  const [deployingContent, setDeployingContent] = React.useState(false);
-  const [pullingRemoteContent, setPullingRemoteContent] = React.useState(false);
-  const attemptedRemotePullsRef = React.useRef<Set<string>>(new Set());
   const [confirmingDeploy, setConfirmingDeploy] = React.useState(false);
-  const [deployedStaticRelease, setDeployedStaticRelease] = React.useState<string | null>(null);
-  const [deployVerification, setDeployVerification] = React.useState<DeployVerificationResult | null>(null);
   const [momentsSettings, setMomentsSettings] = React.useState<MomentsSettings | null>(null);
   const [workspacePreferences, setWorkspacePreferences] = React.useState<WorkspacePreferences | null>(null);
   const [screen, setScreen] = React.useState<'dashboard' | 'content' | 'settings' | 'plugin'>('dashboard');
@@ -343,10 +341,7 @@ export default function App() {
   const [languageByDocument, setLanguageByDocument] = React.useState<Record<string, string>>({});
   const [query, setQuery] = React.useState('');
   const [entityFilter, setEntityFilter] = React.useState<EntityFilter>('all');
-  const [dirtyIds, setDirtyIds] = React.useState<Set<string>>(() => new Set());
   const [loading, setLoading] = React.useState(true);
-  const [saving, setSaving] = React.useState(false);
-  const [saveFailed, setSaveFailed] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [generatingTranslation, setGeneratingTranslation] = React.useState('');
   const [confirmingRefresh, setConfirmingRefresh] = React.useState(false);
@@ -477,23 +472,14 @@ export default function App() {
     initialReviewSuggestionState,
   );
   const editorRef = React.useRef<MarkdownEditorHandle | null>(null);
-  const autosaveQueue = React.useRef(new AutosaveQueue()).current;
+  const autosaveQueue = editorSession.writes;
   const settingsWriteRef = React.useRef<Promise<boolean> | null>(null);
-  const recovery = React.useRef(new EditorRecovery(window.localStorage)).current;
-  const [sourceConflict, setSourceConflict] = React.useState<{
-    id: string; kind: 'markdown' | 'settings'; disk: EditorTranslation | null;
-  } | null>(null);
-  const conflictRef = React.useRef(false);
+  const recovery = editorSession.recovery;
   const [conflictReviewOpen, setConflictReviewOpen] = React.useState(true);
   const [closeRecoveryOpen, setCloseRecoveryOpen] = React.useState(false);
   const [recoveryCopies, setRecoveryCopies] = React.useState<ReturnType<EditorRecovery['list']>>([]);
   const [recoveryCopiesOpen, setRecoveryCopiesOpen] = React.useState(false);
   const closingRef = React.useRef(false);
-  const documentsRef = React.useRef(documents);
-  documentsRef.current = documents;
-  const dirtyIdsRef = React.useRef(dirtyIds);
-  dirtyIdsRef.current = dirtyIds;
-  const savedTranslationContentRef = React.useRef(new Map<string, string>());
   const captureInputRef = React.useRef<MarkdownEditorHandle | null>(null);
   const newProjectInputRef = React.useRef<HTMLInputElement | null>(null);
   const settingsReturnScreenRef = React.useRef<'dashboard' | 'content'>('dashboard');
@@ -994,7 +980,7 @@ export default function App() {
   );
   const pendingSourceChanges = selectedTranslation
     ? summarizeMarkdownBlockChanges(
-        savedTranslationContentRef.current.get(selectedTranslation.id) ?? selectedTranslation.content,
+        editorSession.persistedContent(selectedTranslation.id) ?? selectedTranslation.content,
         selectedTranslation.content,
       )
     : null;
@@ -1110,23 +1096,6 @@ export default function App() {
   const displayedAiChatReferrals = hasSyncedStats
     ? dashboard?.deployed_ai_chat_referrals ?? 0
     : 0;
-  const localDeliveryCount = deliverySyncStatus?.local_commits ?? 0;
-  const remoteDeliveryCount = deliverySyncStatus?.remote_commits ?? 0;
-  const attentionCount = localDeliveryCount + remoteDeliveryCount;
-  const workspaceChangeCount = deliverySyncStatus?.workspace_changes ?? deploymentPlan?.dirty_count ?? 0;
-  const deploymentReadiness = deploymentReadinessFor({
-    localCommitCount: deliverySyncStatus ? localDeliveryCount : null,
-    remoteCommitCount: remoteDeliveryCount,
-    syncState: deliverySyncStatus?.state ?? null,
-    remoteFailure: remoteStatusFailure,
-    workspaceChangeCount,
-    unsavedDocumentCount: dirtyIds.size,
-    planState: deploymentPlanLoad.state,
-    planError: deploymentPlanLoad.error,
-    deploying: deployingContent,
-    pulling: pullingRemoteContent,
-  });
-  const canDeployCommittedContent = deploymentReadiness.canDeploy;
   const visibleRecentItems = (dashboard?.recent_items || []);
   const selectedCommitItems = selectedCommitDay
     ? visibleRecentItems.filter((item) => {
@@ -1179,7 +1148,7 @@ export default function App() {
   }, [filtered, loading, selectedId]);
 
   React.useEffect(() => {
-    setSaveFailed(false);
+    editorSession.clearFailure();
   }, [selectedTranslation?.id]);
 
   React.useEffect(() => {
@@ -1227,26 +1196,7 @@ export default function App() {
       ]);
       setLibrarySeries(nextSeries);
       setRecoveryCopies(recovery.list());
-      savedTranslationContentRef.current = new Map(
-        nextDocuments.flatMap((document) => (
-          document.translations.map((translation) => [translation.id, translation.content] as const)
-        )),
-      );
-      const mergedDocuments = nextDocuments.map((document) => ({
-        ...document,
-        translations: document.translations.map((disk) => {
-          const current = documentsRef.current.flatMap((item) => item.translations).find((item) => item.id === disk.id);
-          const recovered = !current ? recovery.read<EditorTranslation>('markdown', disk.id) : null;
-          if (recovered) dirtyIdsRef.current.add(disk.id);
-          return preserveDraftRevision(disk, recovered || current, dirtyIdsRef.current);
-        }),
-      }));
-      for (const draft of documentsRef.current) {
-        if (!mergedDocuments.some((item) => item.id === draft.id)
-          && draft.translations.some((item) => dirtyIdsRef.current.has(item.id))) mergedDocuments.push(draft);
-      }
-      documentsRef.current = mergedDocuments;
-      setDocuments(mergedDocuments);
+      editorSession.mergeSourceDocuments(nextDocuments);
       setSelectedId((current) => (
         current && nextDocuments.some((document) => (
           document.id === current
@@ -1264,7 +1214,6 @@ export default function App() {
         });
         return next;
       });
-      setDirtyIds(new Set(dirtyIdsRef.current));
     } catch (reason) {
       setError(String(reason));
     } finally {
@@ -1280,85 +1229,31 @@ export default function App() {
     }
   }, []);
 
-  const loadDeploymentPlan = React.useCallback(async () => {
-    setDeploymentPlanLoad({ state: 'loading', plan: null, error: null });
-    try {
-      const plan = await invoke<DeploymentPlan>('get_deployment_plan');
-      setDeploymentPlanLoad({ state: 'ready', plan, error: null });
-    } catch (reason) {
-      setDeploymentPlanLoad({ state: 'error', plan: null, error: String(reason) });
-    }
-  }, []);
-
-  const loadDeliverySyncStatus = React.useCallback(async () => {
-    setRefreshingDeliveryStatus(true);
-    try {
-      const status = await invoke<DeliverySyncStatus>('get_delivery_sync_status');
-      setDeliverySyncStatus(status);
-      setRemoteStatusFailure(null);
-      setError((current) => clearResolvedSynchronizationError(current, status));
-    } catch (reason) {
-      setRemoteStatusFailure(classifyRemoteStatusError(reason));
-    } finally {
-      setRefreshingDeliveryStatus(false);
-    }
-  }, []);
-
-  const deployContent = React.useCallback(async () => {
-    if (deployingContent || !deploymentPlan || !canDeployCommittedContent) return;
+  const { session: deliverySession, snapshot: deliverySnapshot, readiness: deploymentReadiness } = useDeliverySession(
+    screen === 'dashboard', dirtyIds.size, {
+      error: setError,
+      status: status => setError(current => clearResolvedSynchronizationError(current, status)),
+      pulled: async () => { await Promise.all([loadDocuments(), loadDashboard()]); },
+    },
+  );
+  const deploymentPlan = deliverySnapshot.planLoad.plan;
+  const deliverySyncStatus = deliverySnapshot.status;
+  const refreshingDeliveryStatus = deliverySnapshot.refreshingStatus;
+  const deployedStaticRelease = deliverySnapshot.staticRelease;
+  const deployVerification = deliverySnapshot.verification;
+  const loadDeploymentPlan = deliverySession.refreshPlan;
+  const loadDeliverySyncStatus = deliverySession.refreshStatus;
+  const localDeliveryCount = deliverySyncStatus?.local_commits ?? 0;
+  const remoteDeliveryCount = deliverySyncStatus?.remote_commits ?? 0;
+  const attentionCount = localDeliveryCount + remoteDeliveryCount;
+  const workspaceChangeCount = deliverySyncStatus?.workspace_changes ?? deploymentPlan?.dirty_count ?? 0;
+  const canDeployCommittedContent = deploymentReadiness.canDeploy;
+  const deployContent = () => {
+    if (!canDeployCommittedContent) return;
     setConfirmingDeploy(false);
-    setDeployingContent(true);
-    setDeployVerification(null);
-    setDeployedStaticRelease(null);
-    setError(null);
-    try {
-      const deployed = await invoke<DeployRunStatus>('deploy_content');
-      setDeployedStaticRelease(deployed.static_release);
-      const verification = await invoke<DeployVerificationResult>('verify_remote_content');
-      setDeployVerification(verification);
-      await Promise.all([loadDeploymentPlan(), loadDeliverySyncStatus()]);
-    } catch (reason) {
-      setError(String(reason));
-    } finally {
-      setDeployingContent(false);
-    }
-  }, [canDeployCommittedContent, deployingContent, deploymentPlan, loadDeliverySyncStatus, loadDeploymentPlan]);
-
-  const pullRemoteContent = React.useCallback(async () => {
-    if (pullingRemoteContent || !deploymentReadiness.canPull) return;
-    setPullingRemoteContent(true);
-    setError(null);
-    try {
-      const status = await invoke<DeliverySyncStatus>('pull_remote_content');
-      setDeliverySyncStatus(status);
-      setError((current) => clearResolvedSynchronizationError(current, status));
-      await Promise.all([loadDocuments(), loadDashboard(), loadDeploymentPlan()]);
-    } catch (reason) {
-      setError(String(reason));
-    } finally {
-      setPullingRemoteContent(false);
-    }
-  }, [
-    deploymentReadiness.canPull,
-    loadDashboard,
-    loadDeploymentPlan,
-    loadDocuments,
-    pullingRemoteContent,
-  ]);
-
-  React.useEffect(() => {
-    if (screen !== 'dashboard' || pullingRemoteContent) return;
-    const attemptKey = automaticDeploymentPullKey(deliverySyncStatus, dirtyIds.size);
-    if (!attemptKey || attemptedRemotePullsRef.current.has(attemptKey)) return;
-    attemptedRemotePullsRef.current.add(attemptKey);
-    void pullRemoteContent();
-  }, [
-    deliverySyncStatus,
-    dirtyIds.size,
-    pullRemoteContent,
-    pullingRemoteContent,
-    screen,
-  ]);
+    return deliverySession.deploy(dirtyIds.size);
+  };
+  const pullRemoteContent = () => deliverySession.pull(dirtyIds.size);
 
   const loadMomentsSettings = React.useCallback(async () => {
     try {
@@ -1398,44 +1293,6 @@ export default function App() {
   React.useEffect(() => {
     if (screen === 'dashboard') void loadDashboard();
   }, [screen, loadDashboard]);
-
-  React.useEffect(() => {
-    if (screen === 'dashboard') void loadDeploymentPlan();
-  }, [screen, loadDeploymentPlan]);
-
-  React.useEffect(() => {
-    if (screen !== 'dashboard') return;
-    let active = true;
-    let timer = 0;
-    let consecutiveFailures = 0;
-    // Poll every 2s while healthy; back off after failures so a transient
-    // network/TLS fault is retried quietly before a friendly notice appears.
-    const refresh = async () => {
-      let delay = 2_000;
-      try {
-        const status = await invoke<DeliverySyncStatus>('get_delivery_sync_status');
-        if (!active) return;
-        consecutiveFailures = 0;
-        setDeliverySyncStatus(status);
-        setRemoteStatusFailure(null);
-        setError((current) => clearResolvedSynchronizationError(current, status));
-        // Without a deploy target there is nothing remote to watch.
-        if (status.state === 'not_configured') delay = 30_000;
-      } catch (reason) {
-        if (!active) return;
-        consecutiveFailures += 1;
-        const failure = classifyRemoteStatusError(reason);
-        if (remoteStatusFailureVisible(failure, consecutiveFailures)) setRemoteStatusFailure(failure);
-        delay = remoteStatusRetryDelay(consecutiveFailures);
-      }
-      if (active) timer = window.setTimeout(() => void refresh(), delay);
-    };
-    void refresh();
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [screen]);
 
   React.useEffect(() => {
     if (screen === 'content' && entityFilter === 'moment') void loadMomentsSettings();
@@ -1779,92 +1636,39 @@ export default function App() {
     }
   };
 
-  const replaceTranslationContent = React.useCallback((
-    documentId: string,
-    translationId: string,
-    content: string,
-  ) => {
-    const nextDocuments = documentsRef.current.map((document) => (
-      document.id === documentId
-        ? {
-            ...document,
-            translations: document.translations.map((translation) => (
-              translation.id === translationId ? { ...translation, content, title: editorRef.current?.getTitle() || translation.title } : translation
-            )),
-          }
-        : document
-    ));
-    documentsRef.current = nextDocuments;
-    setDocuments(nextDocuments);
-  }, []);
+  const readConflictDisk = () => editorSession.readConflict(async id => {
+    const fresh = await invoke<EditorDocument[]>('list_documents');
+    return fresh.flatMap(item => item.translations).find(item => item.id === id) || null;
+  });
 
-  const flushMarkdown = () => autosaveQueue.run(async () => {
-    if (conflictRef.current) throw new Error('Resolve the source conflict before saving. Your draft is retained.');
-    let attemptedId = '';
-    let lastSaved: EditorDocument | null = null;
-    if (dirtyIdsRef.current.size) setError(null);
-    setSaving(true);
+  const flushMarkdown = async () => {
+    if (editorSession.dirtyIds.size) setError(null);
     try {
-      // Read live drafts on every iteration: edits made during I/O stay pending.
-      while (dirtyIdsRef.current.size) {
-        const id = [...dirtyIdsRef.current][0];
-        attemptedId = id;
-        const document = documentsRef.current.find((item) => item.translations.some((part) => part.id === id));
-        const translation = document?.translations.find((part) => part.id === id);
-        if (!document || !translation) throw new Error(`Cannot locate pending Markdown: ${id}`);
-        recovery.write('markdown', id, translation);
-        const saved = await invoke<EditorDocument>('save_document', {
-          id, title: translation.title || document.title,
-          content: translation.content, expectedRevision: translation.revision,
-        });
-        const savedTranslation = saved.translations.find((part) => part.id === id);
-        if (!savedTranslation) throw new Error(`Saved Markdown was not returned: ${id}`);
-        savedTranslationContentRef.current.set(id, savedTranslation.content);
-        if (settingsRevisionRef.current === translation.revision) settingsRevisionRef.current = savedTranslation.revision;
-        const live = documentsRef.current.find((item) => item.id === document.id)
-          ?.translations.find((part) => part.id === id);
-        const nextDirty = new Set(dirtyIdsRef.current);
-        if (live?.content === translation.content && live?.title === translation.title) {
-          nextDirty.delete(id);
-          recovery.remove('markdown', id);
-        }
-        const nextDocuments = documentsRef.current.map((item) => item.id !== saved.id ? item : {
-          ...saved,
-          translations: mergePersistedTranslations(saved.translations, item.translations, nextDirty),
-        });
-        dirtyIdsRef.current = nextDirty;
-        documentsRef.current = nextDocuments;
-        setDocuments(nextDocuments);
-        setDirtyIds(nextDirty);
-        lastSaved = saved;
-      }
-      setSaveFailed(false);
-      return lastSaved;
+      return await editorSession.flushMarkdown(
+        input => invoke<EditorDocument>('save_document', input),
+        (before, after) => {
+          if (settingsRevisionRef.current === before.revision) settingsRevisionRef.current = after.revision;
+        },
+      );
     } catch (reason) {
       setError(String(reason));
-      setSaveFailed(true);
-      if (isSourceConflict(reason)) {
-        conflictRef.current = true;
-        setSourceConflict({ id: attemptedId, kind: 'markdown', disk: null });
+      const conflict = editorSession.conflict;
+      if (conflict?.kind === 'markdown') {
         setConflictReviewOpen(true);
         try {
-          const fresh = await invoke<EditorDocument[]>('list_documents');
-          const disk = fresh.flatMap((item) => item.translations).find((item) => item.id === attemptedId);
-          if (disk) setSourceConflict({ id: attemptedId, kind: 'markdown', disk });
+          await readConflictDisk();
         } catch (readError) { setError(String(readError)); }
       }
       throw reason;
-    } finally {
-      setSaving(false);
     }
-  });
+  };
 
   const saveSelected = async () => {
     try { return await flushMarkdown(); } catch { return null; }
   };
 
   React.useEffect(() => {
-    if (!dirtyIds.size || saving || metadataSavingId || conflictRef.current) return;
+    if (!dirtyIds.size || saving || metadataSavingId || editorSession.blocked) return;
     const timer = window.setTimeout(() => { void saveSelected(); }, saveFailed ? 5000 : 650);
     return () => window.clearTimeout(timer);
   }, [documents, dirtyIds, saving, saveFailed, metadataSavingId]);
@@ -1911,13 +1715,13 @@ export default function App() {
         document.id === generated.id ? generated : document
       )));
       generated.translations.forEach((translation) => {
-        savedTranslationContentRef.current.set(translation.id, translation.content);
+        editorSession.rememberPersisted(translation.id, translation.content);
       });
       setLanguageByDocument((current) => ({
         ...current,
         [generated.id]: targetLanguage,
       }));
-      setSaveFailed(false);
+      editorSession.clearFailure();
       return generated;
     } catch (reason) {
       setError(String(reason));
@@ -1959,7 +1763,7 @@ export default function App() {
         : `the ${selectedTranslation.language} Markdown of “${selected.title} · ${selected.role}”`,
     })) return;
     const target = selected.translations.find((translation) => translation.language === targetLanguage);
-    const previousSourceBody = savedTranslationContentRef.current.get(selectedTranslation.id)
+    const previousSourceBody = editorSession.persistedContent(selectedTranslation.id)
       ?? selectedTranslation.content;
     const sourceChanges = summarizeMarkdownBlockChanges(
       previousSourceBody,
@@ -2026,10 +1830,10 @@ export default function App() {
         (translation) => translation.language === targetLanguage,
       );
       if (syncedSource) {
-        savedTranslationContentRef.current.set(syncedSource.id, syncedSource.content);
+        editorSession.rememberPersisted(syncedSource.id, syncedSource.content);
       }
       if (syncedTarget) {
-        savedTranslationContentRef.current.set(syncedTarget.id, syncedTarget.content);
+        editorSession.rememberPersisted(syncedTarget.id, syncedTarget.content);
       }
       setDocuments((current) => current.map((document) => (
         document.id !== synced.id
@@ -2060,7 +1864,7 @@ export default function App() {
         ...current,
         [synced.id]: targetLanguage,
       }));
-      setSaveFailed(false);
+      editorSession.clearFailure();
       translationSync.complete(summarizeMarkdownBlockChanges(
         target.content,
         syncedTarget?.content || target.content,
@@ -2088,17 +1892,13 @@ export default function App() {
     ) {
       translationSync.reset();
     }
-    replaceTranslationContent(selected.id, selectedTranslation.id, content);
-    const pending = new Set(dirtyIdsRef.current).add(selectedTranslation.id);
-    dirtyIdsRef.current = pending;
-    setDirtyIds(pending);
-    const draft = documentsRef.current.flatMap((item) => item.translations).find((item) => item.id === selectedTranslation.id);
-    if (draft) {
-      try { recovery.write('markdown', draft.id, draft); }
-      catch (reason) { setError(`Recovery copy could not be saved: ${String(reason)}`); }
+    try {
+      editorSession.editTranslation(selected.id, selectedTranslation.id, content, editorRef.current?.getTitle());
+    } catch (reason) {
+      setError(`Recovery copy could not be saved: ${String(reason)}`);
     }
   }, [
-    replaceTranslationContent,
+    editorSession,
     selected?.id,
     selectedTranslation?.id,
     translationSync.reset,
@@ -2156,7 +1956,7 @@ export default function App() {
     try {
       const imported = await importFilesToSelected(files);
       if (imported.length > 0) {
-        insertMarkdownAtCursor(imported.map((asset) => asset.markdown).join('\n\n'));
+        insertMarkdownAtCursor(autoLayoutImportedMarkdown(imported.map((asset) => asset.markdown).join('\n\n'), imported.length));
       }
     } catch {
       // The shared import boundary owns the user-facing error state.
@@ -2227,7 +2027,7 @@ export default function App() {
           sourcePath,
         }));
       }
-      insertMarkdownAtCursor(imported.map((asset) => asset.markdown).join('\n\n'));
+      insertMarkdownAtCursor(autoLayoutImportedMarkdown(imported.map((asset) => asset.markdown).join('\n\n'), imported.length));
       setLastImportedAsset(imported[imported.length - 1] || null);
       if (deploymentPlan) void loadDeploymentPlan();
     } catch (reason) {
@@ -2244,10 +2044,12 @@ export default function App() {
     }
     let disposed = false;
     let unlisten: (() => void) | undefined;
+    const nativeDrag = new NativeFileDragSession();
     getCurrentWebview().onDragDropEvent((event) => {
       const payload = event.payload;
+      const hasFiles = nativeDrag.update(payload);
       if (payload.type === 'enter' || payload.type === 'over') {
-        setMediaDragActive(Boolean(selectedTranslation));
+        setMediaDragActive(hasFiles && Boolean(selectedTranslation));
         return;
       }
       if (payload.type === 'leave') {
@@ -2256,7 +2058,7 @@ export default function App() {
       }
       if (payload.type === 'drop') {
         setMediaDragActive(false);
-        void importDroppedMedia(payload.paths);
+        if (payload.paths.length) void importDroppedMedia(payload.paths);
       }
     }).then((nextUnlisten) => {
       if (disposed) nextUnlisten();
@@ -2318,14 +2120,14 @@ export default function App() {
 
   const mergeSavedDocument = React.useCallback((saved: EditorDocument) => {
     saved.translations.forEach((translation) => {
-      savedTranslationContentRef.current.set(translation.id, translation.content);
+      editorSession.rememberPersisted(translation.id, translation.content);
     });
-    const nextDocuments = documentsRef.current.map((document) => {
+    const nextDocuments = editorSession.documents.map((document) => {
       const sameEntity = document.entity_type === saved.entity_type
         && document.entity_id === saved.entity_id;
       if (document.id === saved.id) return {
         ...saved,
-        translations: mergePersistedTranslations(saved.translations, document.translations, dirtyIdsRef.current),
+        translations: mergePersistedTranslations(saved.translations, document.translations, editorSession.dirtyIds),
       };
       if (!sameEntity) return document;
       return {
@@ -2347,7 +2149,6 @@ export default function App() {
         pinned: saved.pinned,
       };
     });
-    documentsRef.current = nextDocuments;
     setDocuments(nextDocuments);
   }, []);
 
@@ -2828,20 +2629,8 @@ export default function App() {
     if (next == null || confirmed.phase !== 'saving') return;
     const { target } = confirmed;
     dispatchReviewSuggestion({ type: 'confirmed' });
-    const nextDocuments = documentsRef.current.map((document) => (
-      document.id !== target.documentId ? document : {
-        ...document,
-        translations: document.translations.map((translation) => (
-          translation.id === target.translationId ? { ...translation, content: next } : translation
-        )),
-      }
-    ));
-    documentsRef.current = nextDocuments;
-    setDocuments(nextDocuments);
-    const pending = new Set(dirtyIdsRef.current).add(target.translationId);
-    dirtyIdsRef.current = pending;
-    setDirtyIds(pending);
     try {
+      editorSession.editTranslation(target.documentId, target.translationId, next);
       await flushMarkdown();
       dispatchReviewSuggestion({ type: 'saved' });
       languageReview.resolveFinding(target.findingId);
@@ -3091,7 +2880,7 @@ export default function App() {
   };
 
   const persistContentSettings = async () => {
-    if (conflictRef.current) return false;
+    if (editorSession.blocked) return false;
     if (!selectedContentGroup || !selectedMetadataTranslation) return false;
     const title = metadataDraft.title.trim();
     if (!title) {
@@ -3102,7 +2891,7 @@ export default function App() {
     setMetadataError(null);
     try {
       await flushMarkdown();
-      await autosaveQueue.run(async () => {
+      await editorSession.writeSettings(selectedMetadataTranslation.id, async () => {
         const saved = await invoke<EditorDocument>('save_content_settings', {
           id: selectedMetadataTranslation.id,
           metadata: {
@@ -3126,7 +2915,7 @@ export default function App() {
             visibility: publishingDraft.visibility,
             pinned: selectedContentGroup.kind === 'moment' ? Boolean(publishingDraft.pinned) : null,
           },
-          expectedRevision: settingsRevisionRef.current ?? documentsRef.current.flatMap((item) => item.translations)
+          expectedRevision: settingsRevisionRef.current ?? editorSession.documents.flatMap((item) => item.translations)
             .find((item) => item.id === selectedMetadataTranslation.id)?.revision,
         });
         mergeSavedDocument(saved);
@@ -3140,14 +2929,11 @@ export default function App() {
       return true;
     } catch (reason) {
       setMetadataError(String(reason));
-      if (isSourceConflict(reason)) {
-        conflictRef.current = true;
-        setSourceConflict({ id: selectedMetadataTranslation.id, kind: 'settings', disk: null });
+      const conflict = editorSession.conflict;
+      if (conflict) {
         setConflictReviewOpen(true);
         try {
-          const fresh = await invoke<EditorDocument[]>('list_documents');
-          const disk = fresh.flatMap((item) => item.translations).find((item) => item.id === selectedMetadataTranslation.id);
-          if (disk) { setSourceConflict({ id: disk.id, kind: 'settings', disk }); setConflictReviewOpen(true); }
+          await readConflictDisk();
         } catch (readError) { setError(String(readError)); }
       }
       return false;
@@ -3165,9 +2951,9 @@ export default function App() {
 
   const checkpointEditor = () => {
     try {
-      for (const document of documentsRef.current) {
+      for (const document of editorSession.documents) {
         for (const draft of document.translations) {
-          if (dirtyIdsRef.current.has(draft.id)) recovery.write('markdown', draft.id, draft);
+          if (editorSession.dirtyIds.has(draft.id)) recovery.write('markdown', draft.id, draft);
         }
       }
       if (contentSettingsDirty && selectedContentGroup && selectedMetadataTranslation) {
@@ -3194,7 +2980,7 @@ export default function App() {
   };
 
   React.useEffect(() => {
-    if (!contentSettingsDirty || metadataSavingId || !selectedMetadataTranslation || conflictRef.current) return;
+    if (!contentSettingsDirty || metadataSavingId || !selectedMetadataTranslation || editorSession.blocked) return;
     const timer = window.setTimeout(() => { void saveContentSettings(); }, metadataError ? 5000 : 650);
     return () => window.clearTimeout(timer);
   }, [metadataDraft, publishingDraft, contentSettingsDirty, metadataSavingId, metadataError, selectedMetadataTranslation?.id]);
@@ -3224,14 +3010,12 @@ export default function App() {
   const parkConflictedDraft = async () => {
     const conflict = sourceConflict;
     if (!conflict || !checkpointRef.current()) return;
-    dirtyIdsRef.current = new Set([...dirtyIdsRef.current].filter((id) => id !== conflict.id));
-    setDirtyIds(dirtyIdsRef.current);
+    setDirtyIds(new Set([...editorSession.dirtyIds].filter((id) => id !== conflict.id)));
     if (conflict.kind === 'settings' && selectedContentGroup && selectedMetadataTranslation?.id === conflict.id) {
       setSettingsBaseline({ id: selectedContentGroup.id, metadata: metadataDraft, publishing: publishingDraft });
     }
-    conflictRef.current = false;
     setSourceConflict(null);
-    setSaveFailed(false);
+    editorSession.clearFailure();
     setMetadataError(null);
     setError(null);
     setRecoveryCopies(recovery.list());
@@ -3244,7 +3028,7 @@ export default function App() {
     if (!conflict?.disk) return;
     const disk = conflict.disk;
     if (conflict.kind === 'settings' && selectedMetadataTranslation?.id !== conflict.id) {
-      const target = documentsRef.current.find((document) => document.translations.some((part) => part.id === conflict.id));
+      const target = editorSession.documents.find((document) => document.translations.some((part) => part.id === conflict.id));
       if (target) { setSelectedId(target.id); setContentEditorOpen(true); }
       setError('Review the original document settings before applying this choice.');
       return;
@@ -3253,23 +3037,20 @@ export default function App() {
       // Explicit user choice authorizes rebasing settings; a later disk write still conflicts.
       settingsRevisionRef.current = disk.revision;
     } else {
-      const next = documentsRef.current.map((document) => ({
+      const next = editorSession.documents.map((document) => ({
         ...document,
         translations: document.translations.map((draft) => draft.id !== conflict.id ? draft
           : useDraft ? { ...draft, revision: disk.revision } : disk),
       }));
       if (!useDraft) {
-        dirtyIdsRef.current = new Set([...dirtyIdsRef.current].filter((id) => id !== conflict.id));
+        setDirtyIds(new Set([...editorSession.dirtyIds].filter((id) => id !== conflict.id)));
         recovery.remove('markdown', conflict.id);
-        setDirtyIds(dirtyIdsRef.current);
       }
-      documentsRef.current = next;
       setDocuments(next);
     }
-    conflictRef.current = false;
     setSourceConflict(null);
     setError(null);
-    setSaveFailed(false);
+    editorSession.clearFailure();
     if (conflict.kind === 'settings') await saveContentSettings();
     else if (useDraft) await saveSelected();
     else await loadDocuments();
@@ -3277,11 +3058,7 @@ export default function App() {
 
   const reloadDocumentsAfterRelationship = async (saved: EditorDocument) => {
     const nextDocuments = await invoke<EditorDocument[]>('list_documents');
-    savedTranslationContentRef.current = new Map(
-      nextDocuments.flatMap((document) => (
-        document.translations.map((translation) => [translation.id, translation.content] as const)
-      )),
-    );
+    editorSession.recordPersistedDocuments(nextDocuments);
     setDocuments(nextDocuments);
     setSelectedId(saved.id);
     setLanguageByDocument((current) => {
@@ -3441,7 +3218,14 @@ export default function App() {
     }) : null;
 
   return (
-    <div className={`shell ${sidebarOpen && screen !== 'settings' ? 'sidebar-open' : ''} ${screen === 'settings' ? 'settings-open' : ''} ${desktopWindowChromeClassName}`}>
+    <AppShell
+      settingsOpen={screen === 'settings'}
+      sidebarOpen={sidebarOpen}
+      windowChromeClassName={desktopWindowChromeClassName}
+      momentsActive={updatesShellActive}
+      hasMomentsBackground={Boolean(momentsCoverImage)}
+      mainStyle={mainStyle}
+      titlebar={
       <DesktopTitlebar
         sidebarOpen={sidebarOpen}
         canGoBack={canMoveWorkspaceNavigationHistory(workspaceNavigationHistory, -1)}
@@ -3461,7 +3245,8 @@ export default function App() {
         onForward={() => moveWorkspaceHistory(1)}
         onCompose={() => openCapture('moment')}
       />
-      {screen !== 'settings' && (
+      }
+      sidebar={
         <WorkspaceSidebar
           open={sidebarOpen}
           activePageId={screen === 'plugin' ? activePageId : undefined}
@@ -3483,14 +3268,114 @@ export default function App() {
           onItemOpen={openShelf}
           onSettingsOpen={openWorkspaceSettings}
         />
+      }
+      overlays={<>
+      <CaptureSheet
+        phase={capturePhase}
+        origin={captureOrigin}
+        target={captureTarget}
+        sourceCreated={captureSubmissionRef.current.hasDraft}
+        onTargetChange={setCaptureTarget}
+        category={captureCategory}
+        language={chromeLanguage}
+        onCategoryChange={setCaptureCategory}
+        onLanguageChange={setChromeLanguage}
+        categories={ideaCategories}
+        title={captureTitle}
+        onTitleChange={setCaptureTitle}
+        note={captureNote}
+        onNoteChange={setCaptureNote}
+        attachments={captureAttachments}
+        covers={captureCovers}
+        onCoverChange={setCaptureCover}
+        references={editorAssistReferences}
+        error={captureError}
+        authorName={workspacePreferences?.identity.display_name || 'Silan Hu'}
+        authorAvatarUrl={workspacePreferences?.identity.avatar_url
+          ? toWebviewMediaUrl(workspacePreferences.identity.avatar_url)
+          : undefined}
+        authorAvatarLabel={workspacePreferences?.identity.avatar_label || 'S'}
+        inputRef={captureInputRef}
+        onAttachFiles={attachFilesToCapture}
+        onRemoveAttachment={(index) => {
+          setCaptureCovers(current => { const next = new Map(current); next.delete(captureAttachments[index]); return next; });
+          setCaptureAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index));
+        }}
+        onRequestClose={requestCaptureClose}
+        onDiscard={discardCapture}
+        onKeepWriting={() => setCapturePhase('editing')}
+        onSubmit={() => void submitCapture()}
+        onKeyDown={handleCaptureKeyDown}
+        onTransitionEnd={(event) => {
+          if (
+            event.target === event.currentTarget
+            && event.propertyName === 'clip-path'
+            && capturePhase === 'closing'
+          ) {
+            setCapturePhase('closed');
+          }
+        }}
+      />
+      {sourceConflict && conflictReviewOpen && !closeRecoveryOpen && (
+        <div className="dialog-overlay" style={{ zIndex: 10000 }}>
+          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Resolve source conflict">
+            <h2>The source changed on disk</h2>
+            <p>Your draft has been kept separately. Choose which version to save; newer disk changes will still be checked.</p>
+            <p>{sourceConflict.disk?.source_path || error || 'The current source could not be read yet.'}</p>
+            {!sourceConflict.disk && <button type="button" onClick={() => {
+              void readConflictDisk().then(result => {
+                if (result === 'missing') setError('This source was removed from disk. Your local draft is still retained.');
+              }).catch((reason) => setError(String(reason)));
+            }}>Read current disk version</button>}
+            <label>Current disk version
+              <textarea readOnly value={sourceConflict.disk?.content || ''} rows={8} style={{ width: '100%' }} />
+            </label>
+            <label>Your {sourceConflict.kind === 'settings' ? 'settings' : 'draft'}
+              <textarea readOnly rows={8} style={{ width: '100%' }} value={sourceConflict.kind === 'settings'
+                ? JSON.stringify({ metadata: metadataDraft, publishing: publishingDraft }, null, 2)
+                : editorSession.documents.flatMap((item) => item.translations).find((item) => item.id === sourceConflict.id)?.content || ''} />
+            </label>
+            <div className="dialog-actions">
+              <button type="button" onClick={() => setConflictReviewOpen(false)}>Continue editing</button>
+              <button type="button" onClick={() => void parkConflictedDraft()}>Keep recovery copy and resume other saves</button>
+              {sourceConflict.kind === 'markdown' && <button type="button" disabled={!sourceConflict.disk} onClick={() => void resolveSourceConflict(false)}>Use disk version</button>}
+              <button type="button" disabled={!sourceConflict.disk} onClick={() => void resolveSourceConflict(true)}>Save my {sourceConflict.kind === 'settings' ? 'settings' : 'draft'}</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {recoveryCopiesOpen && (
+        <div className="dialog-overlay" style={{ zIndex: 10002 }}>
+          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Local recovery copies">
+            <h2>Local recovery copies</h2>
+            <p>These copies remain available even if their original file was removed. Select and copy the text you need.</p>
+            {recoveryCopies.map((copy) => (
+              <label key={`${copy.kind}:${copy.id}`} style={{ display: 'block' }}>{copy.kind} · {copy.id}
+                <textarea readOnly rows={8} style={{ width: '100%' }} value={copy.kind === 'markdown'
+                  ? String((copy.value as EditorTranslation).content || '') : JSON.stringify(copy.value, null, 2)} />
+              </label>
+            ))}
+            <button type="button" onClick={() => setRecoveryCopiesOpen(false)}>Close</button>
+          </section>
+        </div>
+      )}
+      {closeRecoveryOpen && (
+        <div className="dialog-overlay" style={{ zIndex: 10001 }}>
+          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Close with recovery copy">
+            <h2>Source save did not finish</h2>
+            <p>You can keep editing, or close with a local recovery copy. Pending drafts return when this workspace opens again.</p>
+            <div className="dialog-actions">
+              <button type="button" onClick={() => setCloseRecoveryOpen(false)}>Keep editing</button>
+              <button type="button" onClick={() => {
+                if (checkpointRef.current()) void getCurrentWindow().destroy().catch((reason) => setError(String(reason)));
+              }}>Close with recovery copy</button>
+            </div>
+          </section>
+        </div>
       )}
 
-      <main
-        className={`main ${updatesShellActive ? 'main-moments' : ''} ${screen === 'settings' ? 'main-settings' : ''}`}
-        data-has-moments-background={updatesShellActive && momentsCoverImage ? 'true' : undefined}
-        style={mainStyle}
-      >
-        <WorkspaceSwitchNotice />
+      </>}
+    >
         {recoveryCopies.length > 0 && (
           <button type="button" onClick={() => { setRecoveryCopies(recovery.list()); setRecoveryCopiesOpen(true); }}>
             Local recovery copies ({recoveryCopies.length})
@@ -4303,6 +4188,8 @@ export default function App() {
                           onReviewFindingActivate={languageReview.openReport}
                           slashCommands={editorAssist.slashCommands}
                           onImportImages={importImagesToSelected}
+                          mediaWorkspace={mediaWorkspace}
+                          mediaSourcePath={selectedTranslation?.source_path}
                           onSelectionAssist={requestSelectionAssist}
                           selectionAssistDisabledReason={selectionAssistAvailability.reason}
                           onChange={patchSelectedTranslationContent}
@@ -4986,6 +4873,8 @@ export default function App() {
                           onReviewFindingActivate={languageReview.openReport}
                           slashCommands={editorAssist.slashCommands}
                           onImportImages={importImagesToSelected}
+                          mediaWorkspace={mediaWorkspace}
+                          mediaSourcePath={selectedTranslation?.source_path}
                           onSelectionAssist={requestSelectionAssist}
                           selectionAssistDisabledReason={selectionAssistAvailability.reason}
                           onChange={patchSelectedTranslationContent}
@@ -5579,114 +5468,6 @@ export default function App() {
               ) : null}
           </ModalLayer>
         )}
-      </main>
-
-      <CaptureSheet
-        phase={capturePhase}
-        origin={captureOrigin}
-        target={captureTarget}
-        sourceCreated={captureSubmissionRef.current.hasDraft}
-        onTargetChange={setCaptureTarget}
-        category={captureCategory}
-        language={chromeLanguage}
-        onCategoryChange={setCaptureCategory}
-        onLanguageChange={setChromeLanguage}
-        categories={ideaCategories}
-        title={captureTitle}
-        onTitleChange={setCaptureTitle}
-        note={captureNote}
-        onNoteChange={setCaptureNote}
-        attachments={captureAttachments}
-        covers={captureCovers}
-        onCoverChange={setCaptureCover}
-        references={editorAssistReferences}
-        error={captureError}
-        authorName={workspacePreferences?.identity.display_name || 'Silan Hu'}
-        authorAvatarUrl={workspacePreferences?.identity.avatar_url
-          ? toWebviewMediaUrl(workspacePreferences.identity.avatar_url)
-          : undefined}
-        authorAvatarLabel={workspacePreferences?.identity.avatar_label || 'S'}
-        inputRef={captureInputRef}
-        onAttachFiles={attachFilesToCapture}
-        onRemoveAttachment={(index) => {
-          setCaptureCovers(current => { const next = new Map(current); next.delete(captureAttachments[index]); return next; });
-          setCaptureAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index));
-        }}
-        onRequestClose={requestCaptureClose}
-        onDiscard={discardCapture}
-        onKeepWriting={() => setCapturePhase('editing')}
-        onSubmit={() => void submitCapture()}
-        onKeyDown={handleCaptureKeyDown}
-        onTransitionEnd={(event) => {
-          if (
-            event.target === event.currentTarget
-            && event.propertyName === 'clip-path'
-            && capturePhase === 'closing'
-          ) {
-            setCapturePhase('closed');
-          }
-        }}
-      />
-      {sourceConflict && conflictReviewOpen && !closeRecoveryOpen && (
-        <div className="dialog-overlay" style={{ zIndex: 10000 }}>
-          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Resolve source conflict">
-            <h2>The source changed on disk</h2>
-            <p>Your draft has been kept separately. Choose which version to save; newer disk changes will still be checked.</p>
-            <p>{sourceConflict.disk?.source_path || error || 'The current source could not be read yet.'}</p>
-            {!sourceConflict.disk && <button type="button" onClick={() => {
-              const pending = sourceConflict;
-              void invoke<EditorDocument[]>('list_documents').then((fresh) => {
-                const disk = fresh.flatMap((item) => item.translations).find((item) => item.id === pending.id);
-                if (disk) setSourceConflict({ ...pending, disk });
-                else setError('This source was removed from disk. Your local draft is still retained.');
-              }).catch((reason) => setError(String(reason)));
-            }}>Read current disk version</button>}
-            <label>Current disk version
-              <textarea readOnly value={sourceConflict.disk?.content || ''} rows={8} style={{ width: '100%' }} />
-            </label>
-            <label>Your {sourceConflict.kind === 'settings' ? 'settings' : 'draft'}
-              <textarea readOnly rows={8} style={{ width: '100%' }} value={sourceConflict.kind === 'settings'
-                ? JSON.stringify({ metadata: metadataDraft, publishing: publishingDraft }, null, 2)
-                : documentsRef.current.flatMap((item) => item.translations).find((item) => item.id === sourceConflict.id)?.content || ''} />
-            </label>
-            <div className="dialog-actions">
-              <button type="button" onClick={() => setConflictReviewOpen(false)}>Continue editing</button>
-              <button type="button" onClick={() => void parkConflictedDraft()}>Keep recovery copy and resume other saves</button>
-              {sourceConflict.kind === 'markdown' && <button type="button" disabled={!sourceConflict.disk} onClick={() => void resolveSourceConflict(false)}>Use disk version</button>}
-              <button type="button" disabled={!sourceConflict.disk} onClick={() => void resolveSourceConflict(true)}>Save my {sourceConflict.kind === 'settings' ? 'settings' : 'draft'}</button>
-            </div>
-          </section>
-        </div>
-      )}
-      {recoveryCopiesOpen && (
-        <div className="dialog-overlay" style={{ zIndex: 10002 }}>
-          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Local recovery copies">
-            <h2>Local recovery copies</h2>
-            <p>These copies remain available even if their original file was removed. Select and copy the text you need.</p>
-            {recoveryCopies.map((copy) => (
-              <label key={`${copy.kind}:${copy.id}`} style={{ display: 'block' }}>{copy.kind} · {copy.id}
-                <textarea readOnly rows={8} style={{ width: '100%' }} value={copy.kind === 'markdown'
-                  ? String((copy.value as EditorTranslation).content || '') : JSON.stringify(copy.value, null, 2)} />
-              </label>
-            ))}
-            <button type="button" onClick={() => setRecoveryCopiesOpen(false)}>Close</button>
-          </section>
-        </div>
-      )}
-      {closeRecoveryOpen && (
-        <div className="dialog-overlay" style={{ zIndex: 10001 }}>
-          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Close with recovery copy">
-            <h2>Source save did not finish</h2>
-            <p>You can keep editing, or close with a local recovery copy. Pending drafts return when this workspace opens again.</p>
-            <div className="dialog-actions">
-              <button type="button" onClick={() => setCloseRecoveryOpen(false)}>Keep editing</button>
-              <button type="button" onClick={() => {
-                if (checkpointRef.current()) void getCurrentWindow().destroy().catch((reason) => setError(String(reason)));
-              }}>Close with recovery copy</button>
-            </div>
-          </section>
-        </div>
-      )}
-    </div>
+    </AppShell>
   );
 }

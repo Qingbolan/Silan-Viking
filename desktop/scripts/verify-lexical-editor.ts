@@ -1,3 +1,19 @@
+import { $extractLayoutBlock } from '../src/components/editor/media/MediaLayoutExtraction';
+import { $readBlockMarkdown, $commitBlockIntoLayout, planBlockIntoLayout, type BlockLayoutZone } from '../src/components/editor/media/MediaBlockDrop';
+import { mediaItemDragMode } from '../src/components/editor/media/MediaItemDrag';
+import { mediaLayoutSyntax } from '../src/components/editor/media/MediaLayoutSyntax';
+import { FormattingToolbar } from '../src/components/editor/plugins/FormattingToolbarPlugin';
+import { MediaLayoutNode } from '../src/components/editor/media/MediaLayoutNode';
+import { $wrapImageLayout, MediaLayoutController } from '../src/components/editor/media/MediaLayoutController';
+import { MediaLayoutDocument, mediaLayoutFromMarkdown } from '../src/components/editor/media/MediaLayout';
+import { setBlockWidth, setWrap, moveItem, setCaption } from '../src/components/editor/media/upstream/src/layout/model';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { $documentBlock, $moveDocumentBlock, $selectedDocumentBlock } from '../src/components/editor/interaction/DocumentBlocks';
+import { createEmptyHistoryState, registerHistory } from '@lexical/history';
+import { HISTORY_PUSH_TAG, UNDO_COMMAND, REDO_COMMAND } from 'lexical';
+import { createElement } from 'react';
+import { MathPreview, ScientificMarkdownNode } from '../src/components/editor/model/ScientificMarkdown';
+import { LexicalEditorPluginRegistry } from '../src/components/editor/extensionPoints';
 import { cleanMarkdownHeadings } from '../src/components/editor/model/MarkdownHygiene';
 import assert from 'node:assert/strict';
 import { renderToStaticMarkup } from 'react-dom/server.browser';
@@ -65,6 +81,8 @@ import {
   ImageEditingController,
 } from '../src/components/editor/interaction/ImageEditingController';
 
+const emptyRegistry = new LexicalEditorPluginRegistry([]);
+
 const source = [
   '# Title',
   '',
@@ -87,7 +105,7 @@ const source = [
 ].join('\n');
 
 const editor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], source),
+  createMarkdownEditorExtension(false, emptyRegistry, source),
 );
 
 const nodeTypes = editor.read(() => {
@@ -178,7 +196,7 @@ runTableToolbarAction(editor, 'delete-column');
 assert.deepEqual(editor.read(tableDimensions), [2, 2]);
 const mutatedTableMarkdown = editor.read(() => $documentToMarkdown());
 const mutatedTableEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], mutatedTableMarkdown),
+  createMarkdownEditorExtension(false, emptyRegistry, mutatedTableMarkdown),
 );
 assert.deepEqual(mutatedTableEditor.read(tableDimensions), [2, 2]);
 mutatedTableEditor.dispose();
@@ -189,7 +207,7 @@ const alignedTableSource = [
   '| a | b | c |',
 ].join('\n');
 const alignedTableEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], alignedTableSource),
+  createMarkdownEditorExtension(false, emptyRegistry, alignedTableSource),
 );
 alignedTableEditor.update(selectFirstTableCell, { discrete: true });
 assert.deepEqual(alignedTableEditor.read(() => {
@@ -226,7 +244,7 @@ alignedTableEditor.dispose();
 const tableRemovalSource = ['| Only |', '| --- |'].join('\n');
 for (const action of ['delete-row', 'delete-column', 'delete-table'] as const) {
   const tableEditor = buildEditorFromExtensions(
-    createMarkdownEditorExtension(false, [], tableRemovalSource),
+    createMarkdownEditorExtension(false, emptyRegistry, tableRemovalSource),
   );
   tableEditor.update(selectFirstTableCell, { discrete: true });
   runTableToolbarAction(tableEditor, action);
@@ -242,7 +260,7 @@ for (const action of ['delete-row', 'delete-column', 'delete-table'] as const) {
 }
 
 const horizontalRuleEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], 'Before'),
+  createMarkdownEditorExtension(false, emptyRegistry, 'Before'),
 );
 horizontalRuleEditor.update(() => $getRoot().selectEnd(), { discrete: true });
 assert.equal(
@@ -256,7 +274,7 @@ assert.match(horizontalRuleEditor.read(() => $documentToMarkdown()), /(?:---|\*\
 horizontalRuleEditor.dispose();
 
 const underlineEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], 'Persistent underline'),
+  createMarkdownEditorExtension(false, emptyRegistry, 'Persistent underline'),
 );
 underlineEditor.update(() => {
   const text = $getRoot().getFirstDescendant();
@@ -268,7 +286,7 @@ assert.equal(underlinedMarkdown, '<u>Persistent underline</u>');
 underlineEditor.dispose();
 
 const headingEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], 'Semantic heading'),
+  createMarkdownEditorExtension(false, emptyRegistry, 'Semantic heading'),
 );
 headingEditor.update(() => $getRoot().selectStart(), { discrete: true });
 setBlockFormat(headingEditor, 'h3');
@@ -276,7 +294,7 @@ assert.equal(headingEditor.read(() => $documentToMarkdown()), '### Semantic head
 headingEditor.dispose();
 
 const titleEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], '# Document title\n\nBody'),
+  createMarkdownEditorExtension(false, emptyRegistry, '# Document title\n\nBody'),
 );
 titleEditor.update(() => {
   const title = $getDocumentTitleNode();
@@ -288,7 +306,7 @@ assert.equal(titleEditor.read(() => $getDocumentTitleNode()?.getTextContent()), 
 titleEditor.dispose();
 
 const defaultTitleEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], 'Body without a heading'),
+  createMarkdownEditorExtension(false, emptyRegistry, 'Body without a heading'),
 );
 defaultTitleEditor.update(() => {
   $ensureDocumentTitleNode();
@@ -308,7 +326,7 @@ assert.match(defaultTitleEditor.read(() => $documentToMarkdown()), /^# Edited do
 defaultTitleEditor.dispose();
 
 const titleLifecycleEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], 'Body'),
+  createMarkdownEditorExtension(false, emptyRegistry, 'Body'),
 );
 const unregisterTitleLifecycle = registerDocumentTitleTransform(
   titleLifecycleEditor,
@@ -325,7 +343,7 @@ unregisterTitleLifecycle();
 titleLifecycleEditor.dispose();
 
 const sectionHeadingEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], 'Intro\n\n# Section heading'),
+  createMarkdownEditorExtension(false, emptyRegistry, 'Intro\n\n# Section heading'),
 );
 sectionHeadingEditor.update(() => {
   assert.equal($getDocumentTitleNode(), null);
@@ -335,7 +353,7 @@ assert.equal(sectionHeadingEditor.read(() => $readFormattingSnapshot().block), '
 sectionHeadingEditor.dispose();
 
 const duplicateSelectionEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], 'repeat alpha\n\nmiddle marker\n\nrepeat omega'),
+  createMarkdownEditorExtension(false, emptyRegistry, 'repeat alpha\n\nmiddle marker\n\nrepeat omega'),
 );
 let exactContext: ReturnType<typeof $readSelectionAssistContext> = null;
 duplicateSelectionEditor.update(() => {
@@ -384,7 +402,7 @@ assert.deepEqual(shortcut('i', { ctrlKey: true }), { kind: 'open-image' });
 assert.equal(shortcut('k', {}, 'source'), null);
 
 const shortcutEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], '**Copy me**'),
+  createMarkdownEditorExtension(false, emptyRegistry, '**Copy me**'),
 );
 shortcutEditor.update(() => $getRoot().select(0, $getRoot().getChildrenSize()), { discrete: true });
 let copiedMarkdown = '';
@@ -434,7 +452,7 @@ assert.equal(shortcutEditor.read(() => $documentToMarkdown()), 'Selection replac
 shortcutEditor.dispose();
 
 const imageEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], '![Before](asset://before.png "Old title")'),
+  createMarkdownEditorExtension(false, emptyRegistry, '![Before](asset://before.png "Old title")'),
 );
 let imageKey = '';
 imageEditor.update(() => {
@@ -469,7 +487,7 @@ assert.equal(imageEditor.read(() => $documentToMarkdown()), '');
 imageEditor.dispose();
 
 const insertedImageEditor = buildEditorFromExtensions(
-  createMarkdownEditorExtension(false, [], ''),
+  createMarkdownEditorExtension(false, emptyRegistry, ''),
 );
 new ImageEditingController(insertedImageEditor).insert([
   { alt: 'Pasted screenshot', src: 'asset://pasted.png', title: null },
@@ -549,7 +567,7 @@ editor.dispose();
 // preserve the URI so publication can discover and include the owned asset.
 for (const extension of ['mp4', 'webm', 'mov', 'm4v']) {
   const markdown = `![Demo](silan://resources/moment/demo/assets/clip.${extension})`;
-  const videoEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, [], markdown));
+  const videoEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, markdown));
   assert.equal(videoEditor.read(() => $documentToMarkdown()), markdown);
   const rendered = videoEditor.read(() => {
     const node = $getRoot().getFirstDescendant();
@@ -564,7 +582,7 @@ for (const extension of ['mp4', 'webm', 'mov', 'm4v']) {
 console.log('Lexical Markdown AST round-trip and video rendering verified.');
 
 const posterMarkdown = '[![Video cover](silan://resources/moment/demo/assets/cover.jpg)](silan://resources/moment/demo/assets/clip.mp4)';
-const posterEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, [], posterMarkdown));
+const posterEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, posterMarkdown));
 assert.equal(posterEditor.read(() => $documentToMarkdown()), posterMarkdown);
 const posterRendered = posterEditor.read(() => {
   const node = $getRoot().getFirstDescendant();
@@ -575,10 +593,363 @@ const posterRendered = posterEditor.read(() => {
 assert.match(posterRendered, /<video[^>]*poster="silan:\/\/resources\/moment\/demo\/assets\/cover.jpg"/);
 posterEditor.dispose();
 
-const cleanTitleEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, [], '# Research&#x20;\n\nBody'));
+const cleanTitleEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, '# Research&#x20;\n\nBody'));
 assert.equal(cleanTitleEditor.read(() => $documentToMarkdown()), '# Research\n\nBody');
 
 assert.equal(cleanMarkdownHeadings('# A\u200b&nbsp;B&#x20;'), '# A B');
 for (const source of ['~~~md\n# Code&#x20;\n~~~', '# `Code&#x20;`', '[url](https://example.com/a&#x20;)', 'Body  \nHard break', '# [Link](https://example.com/a&#x20;)']) {
   assert.equal(cleanMarkdownHeadings(source), source);
+}
+
+// Scientific Markdown must survive the same importer/exporter used by rich mode,
+// source mode, clipboard insertion and autosave. Preview HTML is never the source.
+const scienceSource = String.raw`# Research
+
+Inline $E=mc^2$ and \(\alpha + \beta\).
+
+\[ \boxed{ \text{fixed semantic operator} \quad\longleftrightarrow\quad ?
+\quad\longleftrightarrow\quad \text{free-form Data Agent} } \]
+
+$$
+\frac{a}{b} + \sum_{i=1}^{n} i
+$$
+
+\`\`\`mermaid
+flowchart LR
+  A[Capture] --> B[Review]
+\`\`\`
+
+\`\`\`ts title="untouched"
+const literal = '$x$ and \\[a\\]';
+\`\`\`
+
+Literal \`$x$ \[y\]\` and escaped \$price.
+`.replaceAll('\\`', '`');
+const scienceEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, scienceSource));
+const scienceNodes = () => scienceEditor.read(() => {
+  const result: ScientificMarkdownNode[] = [];
+  const walk = (node: LexicalNode) => {
+    if (node instanceof ScientificMarkdownNode) result.push(node);
+    if ($isElementNode(node)) node.getChildren().forEach(walk);
+  };
+  walk($getRoot());
+  return result;
+});
+const initialScience = scienceEditor.read(() => scienceNodes().map((node) => node.getData()));
+assert.deepEqual(initialScience.map((data) => data.syntax), ['inlineMath', 'silanLatex', 'silanLatex', 'math', 'silanMermaid']);
+assert.equal(initialScience[2].display, true);
+assert.match(initialScience[2].value, /fixed semantic operator/);
+assert.match(initialScience[4].value, /A\[Capture\] --> B\[Review\]/);
+const scienceOutput = scienceEditor.read($documentToMarkdown);
+assert.match(scienceOutput, /```ts title="untouched"/);
+assert.match(scienceOutput, /```mermaid/);
+assert.match(scienceOutput, /\\\[ \\boxed/);
+assert.match(scienceOutput, /`\$x\$ \\\[y\\\]`/);
+replaceMarkdown(scienceEditor, scienceOutput);
+assert.deepEqual(scienceEditor.read(() => scienceNodes().map((node) => node.getData())), initialScience);
+scienceEditor.update(() => {
+  const find = (node: LexicalNode): ScientificMarkdownNode | undefined => {
+    if (node instanceof ScientificMarkdownNode && node.getData().syntax === 'silanMermaid') return node;
+    if ($isElementNode(node)) return node.getChildren().map(find).find(Boolean);
+  };
+  find($getRoot())!.setValue('sequenceDiagram\n  Alice->>Bob: Hello');
+}, { discrete: true });
+assert.match(scienceEditor.read($documentToMarkdown), /Alice->>Bob: Hello/);
+const scienceJson = scienceEditor.getEditorState().toJSON();
+scienceEditor.setEditorState(scienceEditor.parseEditorState(scienceJson));
+assert.match(scienceEditor.read($documentToMarkdown), /Alice->>Bob: Hello/);
+const mathHtml = renderToStaticMarkup(createElement(MathPreview, { value: initialScience[2].value, display: true }));
+assert.match(mathHtml, /class="katex-display"/);
+assert.match(mathHtml, /<math/);
+assert.doesNotMatch(mathHtml, /Formula error/);
+const invalidMath = renderToStaticMarkup(createElement(MathPreview, { value: '\\frac{', display: true }));
+assert.match(invalidMath, /Formula error/);
+assert.match(invalidMath, /\\frac\{/);
+const unsafeMath = renderToStaticMarkup(createElement(MathPreview, { value: '\\href{javascript:alert(1)}{x}', display: false }));
+assert.doesNotMatch(unsafeMath, /href="javascript:/);
+const scienceProjection = scienceEditor.read(() => new MarkdownSourceProjector($getExtensionOutput(MdastImportExtension).registry).project(scienceSource));
+assert.equal(scienceProjection.map((segment) => segment.text).join(''), scienceSource);
+scienceEditor.dispose();
+console.log('Scientific Markdown: TeX delimiters, Mermaid, source preservation, edits, JSON recovery and KaTeX rendering passed.');
+
+const blockEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry,
+  '# Title\n\nFirst **paragraph**.\n\n- One\n- Two\n\n$$\nx^2\n$$\n\nLast paragraph.'));
+const blockBefore = blockEditor.read($documentToMarkdown);
+const keys = blockEditor.read(() => $getRoot().getChildrenKeys());
+blockEditor.read(() => {
+  const list = $getRoot().getChildren()[2];
+  assert($isElementNode(list));
+  assert.equal($documentBlock(list.getFirstDescendant())?.getKey(), list.getKey());
+});
+const history = createEmptyHistoryState();
+history.current = { editor: blockEditor, editorState: blockEditor.getEditorState() };
+const unregisterBlockHistory = registerHistory(blockEditor, history, 300);
+blockEditor.update(() => {
+  assert.equal($moveDocumentBlock(keys[2], keys[4], 'after'), true);
+}, { discrete: true, tag: HISTORY_PUSH_TAG });
+assert.deepEqual(blockEditor.read(() => $getRoot().getChildrenKeys()), [keys[0], keys[1], keys[3], keys[4], keys[2]]);
+assert.match(blockEditor.read($documentToMarkdown), /Last paragraph\.\n\n- One\n- Two/);
+blockEditor.dispatchCommand(UNDO_COMMAND, undefined);
+await Promise.resolve();
+assert.equal(blockEditor.read($documentToMarkdown), blockBefore);
+blockEditor.dispatchCommand(REDO_COMMAND, undefined);
+await Promise.resolve();
+assert.equal(blockEditor.read(() => $getRoot().getLastChild()?.getKey()), keys[2]);
+blockEditor.update(() => {
+  assert.equal($moveDocumentBlock(keys[0], keys[4], 'after'), false, 'title stays first');
+  assert.equal($moveDocumentBlock(keys[3], keys[0], 'before'), true, 'drop on title moves after title');
+  assert.equal($moveDocumentBlock(keys[3], keys[0], 'after'), false, 'adjacent move is a no-op');
+  assert.equal($moveDocumentBlock('deleted', keys[4], 'after'), false);
+  const selection = $createNodeSelection(); selection.add(keys[3]); $setSelection(selection);
+  assert.equal($selectedDocumentBlock()?.getKey(), keys[3], 'decorator selection is a block');
+}, { discrete: true, tag: HISTORY_PUSH_TAG });
+assert.deepEqual(blockEditor.read(() => $getRoot().getChildrenKeys()), [keys[0], keys[3], keys[1], keys[4], keys[2]]);
+unregisterBlockHistory(); blockEditor.dispose();
+console.log('Document blocks: list/decorator moves, Markdown order, title protection and undo/redo passed.');
+
+// The table context must use the caret surface, not a second cell-top overlay.
+const toolbarEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry,
+  '| A | B |\n| --- | --- |\n| One | Two |'));
+toolbarEditor.update(() => {
+  const table = $getRoot().getFirstChild();
+  assert($isTableNode(table));
+  const row = table.getLastChild();
+  assert($isTableRowNode(row));
+  const cell = row.getLastChild();
+  assert($isTableCellNode(cell));
+  cell.selectEnd();
+}, { discrete: true });
+const tableToolbarHtml = renderToStaticMarkup(createElement(FormattingToolbar, {
+  editor: toolbarEditor, visible: false, disabled: false, sourceMode: false,
+  imageImportEnabled: false, onSourceModeChange: () => {},
+}));
+assert.equal((tableToolbarHtml.match(/role="toolbar"/g) || []).length, 1);
+assert.match(tableToolbarHtml, /data-placement="caret"/);
+assert.match(tableToolbarHtml, /aria-label="Table actions"/);
+assert.match(tableToolbarHtml, /Row 2\/2 · Column 2\/2/);
+assert.match(tableToolbarHtml, /Insert row above/);
+assert.match(tableToolbarHtml, /Delete selected column/);
+assert.doesNotMatch(tableToolbarHtml, /class="lexical-table-toolbar"/);
+toolbarEditor.dispose();
+console.log('Table toolbar: one caret surface, retained row/column actions, no cell-top overlay.');
+
+// VML adapter preserves exact embeds, text columns, unknown metadata and history.
+const vmlSource = '<!-- vml {"v":2,"width":0.6,"rows":[{"widths":[1,2],"captions":["A {#fig:a}","B"]}],"future":"keep"} -->\nLeft **text**\n![One](asset://one.png "title") ![[two.png|200]]\nRight *text*\n<!-- /vml -->';
+const vmlEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, vmlSource));
+const readVml = () => vmlEditor.read(() => {
+  const node = $getRoot().getFirstChild(); assert(node instanceof MediaLayoutNode);
+  const doc = node.getDocument(), key = node.getKey();
+  return { getSource: () => doc.source, getDocument: () => doc, getKey: () => key };
+});
+assert.equal(readVml().getSource(), vmlSource);
+assert.equal(readVml().getDocument().model!.rows[0].items.length, 2);
+assert.equal(vmlEditor.read($documentToMarkdown), vmlSource);
+const vmlKey = readVml().getKey();
+const vmlController = new MediaLayoutController(vmlEditor, vmlKey);
+const disposeVmlHistory = registerHistory(vmlEditor, createEmptyHistoryState(), 0);
+vmlEditor.update(() => $getRoot().selectEnd(), { discrete: true });
+vmlController.commit(vmlSource, setBlockWidth(readVml().getDocument().model!, .45));
+assert.equal(readVml().getDocument().model!.width, .45);
+assert(readVml().getSource().includes('![[two.png|200]]'));
+assert(readVml().getSource().includes('"future":"keep"'));
+vmlController.commit(vmlSource, setBlockWidth(readVml().getDocument().model!, .2));
+assert.equal(readVml().getDocument().model!.width, .45);
+vmlEditor.dispatchCommand(UNDO_COMMAND, undefined);
+await new Promise((resolve) => setTimeout(resolve, 0));
+assert.equal(readVml().getSource(), vmlSource);
+vmlEditor.dispatchCommand(REDO_COMMAND, undefined);
+await new Promise((resolve) => setTimeout(resolve, 0));
+assert.equal(readVml().getDocument().model!.width, .45);
+assert(vmlController.text(readVml().getSource(), 'right', 'Updated **right** column'));
+assert.equal(readVml().getDocument().model!.text.right, 'Updated **right** column');
+const vmlSaved = vmlEditor.read($documentToMarkdown);
+replaceMarkdown(vmlEditor, vmlSaved);
+assert.equal(vmlEditor.read($documentToMarkdown), vmlSaved);
+vmlEditor.setEditorState(vmlEditor.parseEditorState(JSON.stringify(vmlEditor.getEditorState().toJSON())));
+assert.equal(readVml().getSource(), vmlSaved);
+disposeVmlHistory(); vmlEditor.dispose();
+for (const source of [
+  '![Figure](asset://figure.png "Original")\nThe lower panels show **original outputs**.',
+  '**Before** [reference](https://example.org) ![Figure](asset://figure.png "Original") *After*',
+  'Before  \n![Figure](asset://figure.png "Original")  \nAfter',
+]) {
+  const editor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, source));
+  const original = editor.read($documentToMarkdown);
+  const unregister = registerHistory(editor, createEmptyHistoryState(), 0);
+  editor.update(() => $getRoot().selectEnd(), { discrete: true });
+  editor.update(() => {
+    const paragraph = $getRoot().getFirstChild(); assert($isElementNode(paragraph));
+    const image = paragraph.getChildren().find($isMarkdownImageNode); assert(image);
+    assert($wrapImageLayout(image.getKey(), { width: 50 }));
+  }, { discrete: true, tag: HISTORY_PUSH_TAG });
+  const result = editor.read($documentToMarkdown);
+  assert.match(result, /<!-- vml/);
+  assert.match(result, /!\[Figure\]\(asset:\/\/figure.png "Original"\)/);
+  if (source.includes('**Before**')) {
+    assert(result.indexOf('**Before**') < result.indexOf('<!-- vml'));
+    assert(result.indexOf('*After*') > result.indexOf('/vml'));
+  }
+  editor.dispatchCommand(UNDO_COMMAND, undefined);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(editor.read($documentToMarkdown), original);
+  replaceMarkdown(editor, result);
+  assert.equal(editor.read($documentToMarkdown), result);
+  unregister(); editor.dispose();
+}
+const prototype = '<!-- silan-media {"version":1,"width":50,"columns":1,"align":"right","height":300,"weights":[1]} -->\n\n![Old](old.png)\n\n<!-- /silan-media -->';
+const migrated = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, prototype));
+const migratedSource = migrated.read($documentToMarkdown);
+assert.match(migratedSource, /<!-- vml/); assert.doesNotMatch(migratedSource, /silan-media/);
+assert.equal(new MediaLayoutDocument(migratedSource).model!.width, .5);
+migrated.dispose();
+for (const source of ['<!-- vml {"v":99} -->\n![A](a.png)\n<!-- /vml -->', '<!-- vml {bad} -->\n![A](a.png)\n<!-- /vml -->']) {
+  const editor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, source));
+  assert.equal(editor.read($documentToMarkdown), source);
+  editor.dispose();
+}
+console.log('VML adapter: exact-source round trips, wiki embeds, text columns, captions, migration, malformed-data retention, undo and stale-write rejection passed.');
+
+// The actual upstream guides exercise all supported syntax through the Desktop parser.
+const guide = (await import('../src/components/editor/media/upstream/guide.json')).default;
+const { findV2Blocks } = await import('../src/components/editor/media/upstream/src/format/v2');
+for (const language of ['en', 'zh'] as const) {
+  const source = guide[language];
+  const expected = findV2Blocks(source.split('\n')).map(block => block.lines.join('\n'));
+  const editor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, source));
+  const actual = editor.read(() => $getRoot().getChildren().filter((node): node is MediaLayoutNode => node instanceof MediaLayoutNode).map(node => node.getSource()));
+  assert.deepEqual(actual, expected, `${language} guide layouts must all remain byte-preserved`);
+  editor.dispose();
+}
+console.log('Both upstream offline guides parse with all layout sources preserved.');
+
+for (const source of [
+  'A [[resources/blog/note/en.md|Related note]] and **bold**.',
+  '<!-- vml {"v":2,"type":"text"} -->\r\n- Last item\r\n<!-- /vml -->',
+]) {
+  const editor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, source));
+  assert.equal(editor.read($documentToMarkdown), source);
+  editor.dispose();
+}
+for (const source of [
+  '```markdown\n<!-- vml {"v":2} -->\n![A](a.png)\n<!-- /vml -->\n```',
+  '> <!-- vml {"v":2} -->\n> ![A](a.png)\n> <!-- /vml -->',
+  '- <!-- vml {"v":2} -->\n  ![A](a.png)\n  <!-- /vml -->',
+]) {
+  const tree = fromMarkdown(source, { extensions: [mediaLayoutSyntax], mdastExtensions: [mediaLayoutFromMarkdown] });
+  assert.equal(tree.children.some(node => node.type === 'silanMediaLayout'), false);
+}
+console.log('Wiki links, CRLF layouts and nested/fenced boundary rejection passed.');
+
+{
+  const first = '<!-- vml {"v":2,"rows":[{"captions":["Caption {#fig:a}"]}]} -->\n![A](a.png)\n<!-- /vml -->';
+  const second = '<!-- vml {"v":2} -->\n![Video](clip.webm)\n<!-- /vml -->';
+  const editor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, `${first}\n\n${second}`));
+  const read = () => editor.read(() => $getRoot().getChildren().filter((node): node is MediaLayoutNode => node instanceof MediaLayoutNode).map(node => ({ key: node.getKey(), source: node.getSource(), model: node.getDocument().model! })));
+  const [a, b] = read();
+  const history = registerHistory(editor, createEmptyHistoryState(), 0);
+  editor.update(() => $getRoot().selectEnd(), { discrete: true });
+  const controller = new MediaLayoutController(editor, a.key);
+  controller.move(a.source, { row: 0, index: 0 }, b.key, 'stale', { kind: 'beside', position: { row: 0, index: 0 }, side: 'before' });
+  assert.equal(read().length, 2);
+  controller.move(a.source, { row: 0, index: 0 }, b.key, b.source, { kind: 'beside', position: { row: 0, index: 0 }, side: 'before' });
+  assert.equal(read().length, 1);
+  assert.equal(read()[0].model.rows[0].items.length, 2);
+  assert.equal(read()[0].model.rows[0].items[0].caption, 'Caption {#fig:a}');
+  assert.equal(read()[0].model.rows[0].items[1].embed.kind, 'video');
+  editor.dispatchCommand(UNDO_COMMAND, undefined);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.deepEqual(read().map(node => node.source), [first, second]);
+  history(); editor.dispose();
+}
+console.log('Cross-layout moves are atomic, retain captions/videos, reject stale targets and undo together.');
+
+// One continuous pointer path can leave and re-enter the same row without changing handles.
+assert.deepEqual([150, 201, 99, 150].map(y => mediaItemDragMode(true, 100, { top: 100, bottom: 200 }, y)), ['position', 'move', 'move', 'position']);
+assert.equal(mediaItemDragMode(true, 0, { top: 100, bottom: 200 }, 150), 'move');
+assert.equal(mediaItemDragMode(false, 100, { top: 100, bottom: 200 }, 150), 'move');
+console.log('Direct image drag: position within a row, move outside, and full-width/multi-image movement passed.');
+
+// Ordinary blocks enter a layout in the same transaction that removes their old position.
+for (const [block, zone] of [
+  ['A **formatted** paragraph with [a link](https://example.org).', { kind: 'text', side: 'left' }],
+  ['- First\n- **Second**', { kind: 'text', side: 'right' }],
+  ['![New](new.png)', { kind: 'media', target: { kind: 'beside', position: { row: 0, index: 0 }, side: 'after' } }],
+] as [string, BlockLayoutZone][]) for (const after of [false, true]) {
+  const layout = '<!-- vml {"v":2} -->\n![Original](original.png)\n<!-- /vml -->';
+  const editor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, after ? `${layout}\n\n${block}` : `${block}\n\n${layout}`));
+  const original = editor.read($documentToMarkdown);
+  const plan = editor.read(() => {
+    const children = $getRoot().getChildren(), source = children[after ? 1 : 0], destination = children[after ? 0 : 1]; assert(destination instanceof MediaLayoutNode);
+    const markdown = $readBlockMarkdown(source.getKey())!;
+    const next = planBlockIntoLayout(markdown, destination.getSource(), zone); assert(next);
+    return { key: source.getKey(), source: markdown, destinationKey: destination.getKey(), destinationSource: destination.getSource(), next, zone };
+  });
+  const history = registerHistory(editor, createEmptyHistoryState(), 0);
+  editor.update(() => $getRoot().selectEnd(), { discrete: true });
+  editor.update(() => { assert.equal($commitBlockIntoLayout({ ...plan, source: 'stale' }), false); assert.equal($commitBlockIntoLayout({ ...plan, destinationSource: 'stale' }), false); }, { discrete: true });
+  assert.equal(editor.read($documentToMarkdown), original);
+  editor.update(() => { assert($commitBlockIntoLayout(plan)); }, { discrete: true, tag: HISTORY_PUSH_TAG });
+  assert.equal(editor.read(() => $getRoot().getChildrenSize()), 1);
+  const model = new MediaLayoutDocument(editor.read($documentToMarkdown)).model!;
+  if (zone.kind === 'text') assert.equal(model.text[zone.side], plan.source);
+  else assert.deepEqual(model.rows[0].items.map(item => item.embed.target), ['original.png', 'new.png']);
+  editor.dispatchCommand(UNDO_COMMAND, undefined); await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(editor.read($documentToMarkdown), original);
+  history(); editor.dispose();
+}
+const textBox = '<!-- vml {"v":2,"type":"text"} -->\nExisting text\n<!-- /vml -->';
+const insertedImage = planBlockIntoLayout('![New](new.png)', textBox, { kind: 'media', target: { kind: 'newRow', beforeRow: 0 } });
+assert(insertedImage); assert.equal(new MediaLayoutDocument(insertedImage).model!.rows.length, 1);
+assert.equal(new MediaLayoutDocument(insertedImage).model!.text.left, 'Existing text');
+console.log('Block-to-layout drops: paragraphs, formatted lists, images, text boxes, stale rejection and atomic undo passed.');
+
+// Extraction is an outer-document transaction, including the last item/last text block.
+{
+
+  for (const mode of ['media', 'column', 'last-text'] as const) {
+    const source = mode === 'last-text'
+      ? '<!-- vml {"v":2,"type":"text"} -->\nOnly **text**\n<!-- /vml -->'
+      : '<!-- vml {"v":2,"rows":[{"captions":["Caption {#fig:one}"]}]} -->\nFirst **paragraph**\n\n- A\n- B\n![Photo](photo.png)\n<!-- /vml -->';
+    const editor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, `${source}\n\nAfter layout`));
+    const original = editor.read($documentToMarkdown);
+    const info = editor.read(() => {
+      const [layout, target] = $getRoot().getChildren(); assert(layout instanceof MediaLayoutNode);
+      const column = layout.getDocument().model!.text.left!;
+      const raw = mode === 'last-text' ? column : '- A\n- B';
+      return { layoutKey: layout.getKey(), targetKey: target.getKey(), source: layout.getSource(), from: column.indexOf(raw), raw };
+    });
+    const extraction = mode === 'media' ? { kind: 'media' as const, ...info, position: { row: 0, index: 0 } }
+      : { kind: 'column' as const, ...info, side: 'left' as const, to: info.from + info.raw.length };
+    const history = registerHistory(editor, createEmptyHistoryState(), 0);
+    editor.update(() => $getRoot().selectEnd(), { discrete: true });
+    editor.update(() => { assert.equal($extractLayoutBlock({ ...extraction, source: 'stale' }, info.targetKey, 'after'), false); }, { discrete: true });
+    assert.equal(editor.read($documentToMarkdown), original);
+    editor.update(() => { assert($extractLayoutBlock(extraction, info.targetKey, 'after')); }, { discrete: true, tag: HISTORY_PUSH_TAG });
+    editor.read(() => {
+      const selected = $selectedDocumentBlock();
+      assert(selected, 'drop must establish selection in the outer editor');
+      assert.equal(selected.getPreviousSibling()?.getKey(), info.targetKey, 'selection must follow the extracted block, not the stale caret');
+    });
+    const output = editor.read($documentToMarkdown);
+    if (mode === 'media') { assert(output.indexOf('![Photo]') > output.indexOf('After layout')); assert(output.includes('Caption {#fig:one}')); }
+    else if (mode === 'column') { assert(output.indexOf('- A') > output.indexOf('After layout')); assert(output.includes('First **paragraph**')); }
+    else { assert(!output.includes('<!-- vml')); assert(output.indexOf('Only **text**') > output.indexOf('After layout')); }
+    editor.dispatchCommand(UNDO_COMMAND, undefined); await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(editor.read($documentToMarkdown), original);
+    history(); editor.dispose();
+  }
+}
+console.log('Layout extraction: media/captions, individual lists, empty-layout cleanup, stale guards and single-step undo passed.');
+
+// A layout can be its own adjacent drop anchor, including extraction of its only image.
+for (const edge of ['before', 'after'] as const) {
+  const source = '<!-- vml {"v":2} -->\n![Only](only.png)\n<!-- /vml -->';
+  const editor = buildEditorFromExtensions(createMarkdownEditorExtension(false, emptyRegistry, source));
+  editor.update(() => {
+    const layout = $getRoot().getFirstChild(); assert(layout instanceof MediaLayoutNode);
+    assert($extractLayoutBlock({ kind: 'media', layoutKey: layout.getKey(), source: layout.getSource(), position: { row: 0, index: 0 } }, layout.getKey(), edge));
+  }, { discrete: true });
+  const output = editor.read($documentToMarkdown);
+  assert(output.includes('![Only](only.png)')); assert(!output.includes('<!-- vml'));
+  editor.dispose();
 }

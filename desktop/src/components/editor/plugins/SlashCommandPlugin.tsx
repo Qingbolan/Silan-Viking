@@ -1,3 +1,4 @@
+import { INSERT_LAYOUT_PICKER, OPEN_MEDIA_SETTINGS, OPEN_MEDIA_GUIDE, REVIEW_UNWRAP_MEDIA } from '../media/MediaLayoutCommands';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
@@ -22,6 +23,8 @@ import {
   CalendarDays,
   CheckSquare,
   FileText,
+  Sigma,
+  Workflow,
   Hash,
   Heading2,
   Image,
@@ -110,6 +113,21 @@ function tableCommand(rows: number, columns: number): SlashCommandDefinition {
 
 export const defaultSlashCommands: SlashCommandDefinition[] = [
   {
+    id: 'media-layout-insert', title: '图片与视频布局', description: '导入媒体并创建可拖动布局。', keywords: ['media', 'layout', 'image', 'video', '图片', '布局'], icon: Image,
+    run: ({ editor, deleteTrigger }) => { deleteTrigger(); editor.dispatchCommand(INSERT_LAYOUT_PICKER, undefined); },
+  },
+  {
+    id: 'media-text-box', title: '文字布局框', description: '可调整宽度、环绕和多栏的文字框。', keywords: ['text', 'columns', '文字', '双栏'], icon: FileText,
+    run: ({ insertMarkdown }) => insertMarkdown('<!-- vml {"v":2,"type":"text"} -->\n在此输入文字。\n<!-- /vml -->'),
+  },
+  ...[
+    { id: 'media-layout-settings', title: '图文布局设置', command: OPEN_MEDIA_SETTINGS },
+    { id: 'media-layout-examples', title: '图文布局功能示例', command: OPEN_MEDIA_GUIDE },
+    { id: 'media-layout-unwrap-all', title: '移除当前文档全部布局…', command: REVIEW_UNWRAP_MEDIA },
+  ].map(({ id, title, command }): SlashCommandDefinition => ({ id, title, description: 'Adjustable Media', keywords: ['media', 'layout', '布局'], icon: Image,
+    run: ({ editor, deleteTrigger }) => { deleteTrigger(); editor.dispatchCommand(command, undefined); },
+  })),
+  {
     id: 'paragraph',
     title: 'Paragraph',
     description: 'Return the current block to body text.',
@@ -188,6 +206,22 @@ export const defaultSlashCommands: SlashCommandDefinition[] = [
     keywords: ['tag', 'hash', 'label'],
     icon: Hash,
     run: ({ insertMarkdown }) => insertMarkdown('#topic '),
+  },
+  {
+    id: 'math',
+    title: 'Formula',
+    description: 'Insert an editable LaTeX formula.',
+    keywords: ['math', 'latex', 'equation', '公式'],
+    icon: Sigma,
+    run: ({ insertMarkdown }) => insertMarkdown('$$\nE = mc^2\n$$\n'),
+  },
+  {
+    id: 'mermaid',
+    title: 'Mermaid diagram',
+    description: 'Insert an editable flowchart or diagram.',
+    keywords: ['mermaid', 'diagram', 'flowchart', '图表', '流程图'],
+    icon: Workflow,
+    run: ({ insertMarkdown }) => insertMarkdown('```mermaid\nflowchart LR\n  A[Start] --> B[Done]\n```\n'),
   },
   tableCommand(3, 3),
   {

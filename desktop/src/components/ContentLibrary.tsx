@@ -1,3 +1,4 @@
+import { NativeFileDragSession } from '../lib/nativeFileDrag';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { invoke, isTauri } from '@tauri-apps/api/core';
@@ -116,15 +117,17 @@ export function ContentLibrary({ enabled, children, groups, series, selectedSeri
             return;
         let disposed = false;
         let unlisten: (() => void) | undefined;
+        const nativeDrag = new NativeFileDragSession();
         void getCurrentWebview().onDragDropEvent(({ payload }) => {
-            if (payload.type === 'leave') {
+            const hasFiles = nativeDrag.update(payload);
+            if (payload.type === 'leave' || (payload.type !== 'drop' && !hasFiles)) {
                 setDropTarget('');
                 return;
             }
             const target = document.elementFromPoint(payload.position.x / window.devicePixelRatio, payload.position.y / window.devicePixelRatio);
             if (payload.type === 'drop') {
                 setDropTarget('');
-                nativeDrop.current(payload.paths, target);
+                if (payload.paths.length) nativeDrop.current(payload.paths, target);
             }
             else
                 setDropTarget(root.current?.contains(target) ? target?.closest<HTMLElement>('[data-series-target]')?.dataset.seriesTarget || '' : '');

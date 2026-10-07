@@ -171,8 +171,12 @@ function semanticStyle(node: MdastNode): MarkdownSourceStyle | null {
       return 'emphasis';
     case 'delete':
       return 'delete';
+    case 'inlineMath':
+    case 'silanLatex':
     case 'inlineCode':
       return 'inline-code';
+    case 'math':
+    case 'silanMermaid':
     case 'code':
       return 'code';
     case 'link':

@@ -1,17 +1,18 @@
 //! Thin Tauri-facing adapters over the public `silan-viking-app` use cases.
 
+mod delivery;
+pub(crate) use delivery::DesktopDelivery;
+
 use crate::model::{
-    CommitActivityDay, ContentMetadataInput, DailyContentTraffic, DailyTraffic, DashboardData,
-    DashboardItem, DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeployedStats,
-    DeploymentPlan, DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorRelation,
-    EditorTranslation, EngagementStats, EpisodeSeriesInput, EpisodeSeriesSource, GeoAction,
-    GeoEvidence, GeoInsightReport, GeoMetric, GeoScoreComponent, ImportedMediaAsset,
-    InteractionComment, InteractionDetails, InteractionLiker, MarkdownSelectionAssistAction,
+    ContentMetadataInput, DailyContentTraffic, DailyTraffic, DashboardData, DashboardItem,
+    DeployedStats, DocumentStateInput, EditorDocument, EditorRelation, EditorTranslation,
+    EngagementStats, EpisodeSeriesInput, EpisodeSeriesSource, GeoAction, GeoEvidence,
+    GeoInsightReport, GeoMetric, GeoScoreComponent, ImportedMediaAsset, InteractionComment,
+    InteractionDetails, InteractionLiker, MarkdownSelectionAssistAction,
     MarkdownSelectionAssistInput, MarkdownSelectionAssistResult, MomentsCover, MomentsProfile,
-    MomentsSettings, RemoteContentVersion, ResumeEntryInput, ResumePartSource, ResumeProfile,
-    ResumeProfileSource, ResumeSection, ResumeSocialLink, StatsSyncReport, TopContentItem,
-    TrafficCountry, TrafficEvidence, TrafficSource, VersionChange, VersionCommit, VersionStatus,
-    VisitorLocation, WorkspaceFileChange, WorkspaceIdentity, WorkspacePreferences,
+    MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource,
+    ResumeSection, ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry,
+    TrafficEvidence, TrafficSource, VisitorLocation, WorkspaceIdentity, WorkspacePreferences,
 };
 use crate::workspace_runtime;
 use serde::Deserialize;
@@ -19,15 +20,14 @@ use silan_viking_app::{
     api_base_url, workspace_stats_sync_token, ArticleImageAttributionPlan,
     ArticleImageAttributionResult, ArticleImageAttributionWorkspace, ContentCreator, ContentEditor,
     ContentKind, ContentRelationshipEditor, CoverBrief, CoverGenerationInput, CoverWorkspace,
-    CreateTranslationInput, DeepSeekApiKey, DeepSeekCommitMessageGenerator,
-    DeletePrivateResourceInput, DeletedPrivateResource, DeliveryControl, EditableDocument,
-    EditablePart, EditableSection, GeoAdvisor, IdeaCategory, ImageOutputFormat, ImageQuality,
-    ImageSize, LanguageAuditReport, LanguageAuditScope, LanguageAuditWorkflow,
+    CreateTranslationInput, DeepSeekApiKey, DeletePrivateResourceInput, DeletedPrivateResource,
+    EditableDocument, EditablePart, EditableSection, GeoAdvisor, IdeaCategory, ImageOutputFormat,
+    ImageQuality, ImageSize, LanguageAuditReport, LanguageAuditScope, LanguageAuditWorkflow,
     MarkdownSelectionEditAction, MarkdownSelectionEditRequest, MarkdownTranslationRequest,
     MarkdownTranslationSyncRequest, MediaAssetRef, MediaLibrary, OpenAiApiKey,
-    OpenAiMarkdownTranslator, RelationshipTargetKind, ReleaseScope, ResumeProfileUpdate,
-    SaveMetadataInput, SaveTranslationInput, SaveVisibilityInput, StatsCache, StatsError,
-    StatsSync, WebsiteInsights, WorkspaceContent,
+    OpenAiMarkdownTranslator, RelationshipTargetKind, ResumeProfileUpdate, SaveMetadataInput,
+    SaveTranslationInput, SaveVisibilityInput, StatsCache, StatsError, StatsSync, WebsiteInsights,
+    WorkspaceContent,
 };
 use std::collections::BTreeMap;
 use std::env;
@@ -37,19 +37,6 @@ use std::path::{Path, PathBuf};
 
 const DEFAULT_MOMENTS_BACKGROUND_POSITION: &str = "center 42%";
 const DEFAULT_MOMENTS_COVER_HEIGHT_PX: u16 = 420;
-
-fn delivery_sync_status_for_desktop(
-    status: silan_viking_app::DeliverySyncStatus,
-) -> DeliverySyncStatus {
-    DeliverySyncStatus {
-        local_head: status.local_head,
-        remote_head: status.remote_head,
-        local_commits: status.local_commits,
-        remote_commits: status.remote_commits,
-        workspace_changes: status.workspace_changes,
-        state: status.state,
-    }
-}
 
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct GenerateCoverAssetInput {
@@ -138,7 +125,6 @@ pub(crate) struct DesktopWorkspace {
     cover_workspace: CoverWorkspace,
     image_attribution: ArticleImageAttributionWorkspace,
     geo_advisor: GeoAdvisor,
-    delivery_control: DeliveryControl,
 }
 
 impl DesktopWorkspace {
@@ -153,28 +139,20 @@ impl DesktopWorkspace {
     fn from_paths(workspace: DesktopWorkspacePaths) -> Result<Self, String> {
         let db_path = workspace.db_path;
         let content_root = workspace.content_root;
+        let services = silan_viking_app::WorkspaceServices::open(&content_root)
+            .map_err(|error| error.to_string())?;
         Ok(Self {
-            website_insights: WebsiteInsights::open(&content_root, &db_path)
+            website_insights: services
+                .insights(&db_path)
                 .map_err(|error| error.to_string())?,
-            content: ContentEditor::open(&content_root).map_err(|error| error.to_string())?,
-            creator: ContentCreator::open(&content_root).map_err(|error| error.to_string())?,
-            relationships: ContentRelationshipEditor::open(&content_root)
-                .map_err(|error| error.to_string())?,
-            workspace_content: WorkspaceContent::open(&content_root)
-                .map_err(|error| error.to_string())?,
-            media_library: MediaLibrary::open(&content_root).map_err(|error| error.to_string())?,
-            cover_workspace: CoverWorkspace::open(&content_root)
-                .map_err(|error| error.to_string())?,
-            image_attribution: ArticleImageAttributionWorkspace::open(&content_root)
-                .map_err(|error| error.to_string())?,
-            geo_advisor: GeoAdvisor::open(&content_root, &db_path)
-                .map_err(|error| error.to_string())?,
-            delivery_control: DeliveryControl::open(
-                &content_root,
-                &db_path,
-                content_root.parent().unwrap_or(&content_root),
-            )
-            .map_err(|error| error.to_string())?,
+            content: services.editor(),
+            creator: services.creator(),
+            relationships: services.relationships(),
+            workspace_content: services.content(),
+            media_library: services.media(),
+            cover_workspace: services.covers(),
+            image_attribution: services.image_attribution(),
+            geo_advisor: services.geo_advisor(&db_path),
             media_base: api_base_url(&content_root).ok(),
             db_path,
             content_root,
@@ -356,183 +334,11 @@ impl DesktopWorkspace {
         })
     }
 
-    pub(crate) fn version_status(&self, scope: &str) -> Result<VersionStatus, String> {
-        let status = self
-            .delivery_control
-            .scope_status(ReleaseScope::parse(scope).map_err(|error| error.to_string())?)
-            .map_err(|error| error.to_string())?;
-        Ok(map_version_status(status))
-    }
-
-    pub(crate) fn release_scope(
-        &self,
-        scope: &str,
-        message: &str,
-    ) -> Result<VersionStatus, String> {
-        let status = self
-            .delivery_control
-            .release_scope(
-                ReleaseScope::parse(scope).map_err(|error| error.to_string())?,
-                message,
-            )
-            .map_err(|error| error.to_string())?;
-        Ok(map_version_status(status))
-    }
-
-    pub(crate) fn release_file_diff(&self, scope: &str, path: &str) -> Result<String, String> {
-        self.delivery_control
-            .release_file_diff(
-                ReleaseScope::parse(scope).map_err(|error| error.to_string())?,
-                path,
-            )
-            .map_err(|error| error.to_string())
-    }
-
-    pub(crate) fn deployment_plan(&self) -> Result<DeploymentPlan, String> {
-        let plan = self
-            .delivery_control
-            .deployment_plan()
-            .map_err(|error| error.to_string())?;
-        Ok(DeploymentPlan {
-            branch: plan.branch,
-            head: plan.head,
-            deploy_target: plan
-                .deploy_target
-                .unwrap_or_else(|| "No deployed API target configured".to_owned()),
-            dirty_count: plan.dirty_count,
-            media_asset_count: plan.media_asset_count,
-            next_action: plan.next_action,
-            commit_activity: plan
-                .commit_activity
-                .into_iter()
-                .map(|day| CommitActivityDay {
-                    date: day.date,
-                    commit_count: day.commit_count,
-                    scopes: day
-                        .scopes
-                        .into_iter()
-                        .map(|scope| scope.id().to_owned())
-                        .collect(),
-                })
-                .collect(),
-            scopes: plan
-                .scopes
-                .into_iter()
-                .map(|scope| DeploymentScopeStatus {
-                    scope: scope.scope.id().to_owned(),
-                    scope_label: scope.scope_label,
-                    dirty_count: scope.dirty_count,
-                    clean: scope.dirty_count == 0,
-                })
-                .collect(),
-        })
-    }
-
-    pub(crate) fn delivery_sync_status(&self) -> Result<DeliverySyncStatus, String> {
-        self.delivery_control
-            .sync_status()
-            .map(delivery_sync_status_for_desktop)
-            .map_err(|error| error.to_string())
-    }
-
-    pub(crate) fn pull_remote_changes(&self) -> Result<DeliverySyncStatus, String> {
-        self.delivery_control
-            .pull_remote_changes()
-            .map(delivery_sync_status_for_desktop)
-            .map_err(|error| error.to_string())
-    }
-
-    pub(crate) fn workspace_changes(&self) -> Result<Vec<WorkspaceFileChange>, String> {
-        self.delivery_control
-            .workspace_changes()
-            .map(|changes| {
-                changes
-                    .into_iter()
-                    .map(|change| WorkspaceFileChange {
-                        path: change.path,
-                        status: change.status,
-                        staged: change.staged,
-                        unstaged: change.unstaged,
-                    })
-                    .collect()
-            })
-            .map_err(|error| error.to_string())
-    }
-
-    pub(crate) fn workspace_file_diff(&self, path: &str, staged: bool) -> Result<String, String> {
-        self.delivery_control
-            .file_diff(path, staged)
-            .map_err(|error| error.to_string())
-    }
-
-    pub(crate) fn generate_workspace_commit_message(
-        &self,
-        api_key: &DeepSeekApiKey,
-    ) -> Result<String, String> {
-        let staged_diff = self
-            .delivery_control
-            .staged_diff()
-            .map_err(|error| error.to_string())?;
-        DeepSeekCommitMessageGenerator::configured()?
-            .generate(api_key, &staged_diff)
-            .map_err(|error| error.to_string())
-    }
-
-    pub(crate) fn stage_workspace_paths(&self, paths: &[String]) -> Result<(), String> {
-        self.delivery_control
-            .stage_paths(paths)
-            .map_err(|error| error.to_string())
-    }
-
-    pub(crate) fn unstage_workspace_paths(&self, paths: &[String]) -> Result<(), String> {
-        self.delivery_control
-            .unstage_paths(paths)
-            .map_err(|error| error.to_string())
-    }
-
-    pub(crate) fn commit_workspace(&self, message: &str) -> Result<DeliverySyncStatus, String> {
-        self.delivery_control
-            .commit_workspace(message)
-            .map_err(|error| error.to_string())?;
-        self.delivery_sync_status()
-    }
-
-    pub(crate) fn deploy_content(&self) -> Result<DeployRunStatus, String> {
-        let status = self
-            .delivery_control
-            .deploy_content()
-            .map_err(|error| error.to_string())?;
-        Ok(DeployRunStatus {
-            success: status.success,
-            content_commit: status.content_commit,
-            static_published: status.static_published,
-            static_release: status.static_release,
-            stdout: status.stdout,
-            stderr: status.stderr,
-        })
-    }
-
-    pub(crate) fn verify_remote(&self) -> Result<DeployVerificationResult, String> {
-        let result = self
-            .delivery_control
-            .verify_remote()
-            .map_err(|error| error.to_string())?;
-        Ok(DeployVerificationResult {
-            verified: result.verified,
-            expected_content_commit: result.expected_content_commit,
-            remote: RemoteContentVersion {
-                health: result.remote.health,
-                content_hash: result.remote.content_hash,
-                content_commit: result.remote.content_commit,
-                generated_at: result.remote.generated_at,
-                media_root_ok: result.remote.media_root_ok,
-            },
-            mismatch_reason: result.mismatch_reason,
-        })
-    }
-
     pub(crate) fn content_library(&self) -> silan_viking_app::library::ContentLibrary {
-        silan_viking_app::library::ContentLibrary::new(self.workspace_content.content_root(), &self.db_path)
+        silan_viking_app::library::ContentLibrary::new(
+            self.workspace_content.content_root(),
+            &self.db_path,
+        )
     }
 
     pub(crate) fn list_documents(&self) -> Result<Vec<EditorDocument>, String> {
@@ -1087,6 +893,22 @@ impl DesktopWorkspace {
             byte_count: asset.byte_count,
             local_path,
         }
+    }
+
+    pub(crate) fn resolve_media_embeds(
+        &self,
+        source_path: &str,
+        references: Vec<String>,
+    ) -> Vec<Option<String>> {
+        references
+            .iter()
+            .map(|reference| {
+                self.media_library
+                    .resolve_embed_reference(source_path, reference)
+                    .ok()
+                    .map(|asset| asset.uri)
+            })
+            .collect()
     }
 
     pub(crate) fn geo_insights(&self, translation_id: &str) -> Result<GeoInsightReport, String> {
@@ -2063,33 +1885,6 @@ fn map_geo_evidence(evidence: silan_viking_app::GeoEvidence) -> GeoEvidence {
     }
 }
 
-fn map_version_status(status: silan_viking_app::ScopeReleaseStatus) -> VersionStatus {
-    VersionStatus {
-        scope: status.scope.id().to_owned(),
-        scope_label: status.scope_label,
-        branch: status.branch,
-        head: status.head,
-        dirty_count: status.dirty_count,
-        changes: status
-            .changes
-            .into_iter()
-            .map(|change| VersionChange {
-                status: change.status,
-                path: change.path,
-            })
-            .collect(),
-        recent_commits: status
-            .recent_commits
-            .into_iter()
-            .map(|commit| VersionCommit {
-                hash: commit.hash,
-                subject: commit.subject,
-                relative_time: commit.relative_time,
-            })
-            .collect(),
-    }
-}
-
 /// Serialize block-editor entries back into the on-disk TOML shape:
 /// `[[entry]]` array-of-tables for `entry_list` parts, a top-level
 /// identity-bearing `[[entry]]` tables for `key_value_list` parts.
@@ -2328,8 +2123,8 @@ mod tests {
 
     #[test]
     fn editor_projection_preserves_series_metadata() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../engine/tests/fixtures/content");
+        let root =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../engine/tests/fixtures/content");
         let document = WorkspaceContent::open(root)
             .expect("fixture workspace")
             .editable_documents()
@@ -2343,8 +2138,14 @@ mod tests {
         assert!(!documents.is_empty());
         for document in documents {
             assert_eq!(document.series_title.as_deref(), Some("Tutorial Series"));
-            assert_eq!(document.series_description.as_deref(), Some("A walkthrough series."));
-            assert_eq!(document.series_cover_url.as_deref(), Some("silan://resources/episode/tutorial-series/assets/cover.png"));
+            assert_eq!(
+                document.series_description.as_deref(),
+                Some("A walkthrough series.")
+            );
+            assert_eq!(
+                document.series_cover_url.as_deref(),
+                Some("silan://resources/episode/tutorial-series/assets/cover.png")
+            );
         }
     }
 

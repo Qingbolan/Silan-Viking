@@ -1,4 +1,4 @@
-import {
+import { HISTORY_PUSH_TAG,
   $createNodeSelection,
   $createParagraphNode,
   $getNearestNodeFromDOMNode,
@@ -26,6 +26,8 @@ import {
   $captureSelectionRange,
   $tryRestoreSelectionRange,
 } from '../model/SelectionRange';
+import { $createMediaLayout } from '../media/MediaLayoutNode';
+import { sourceFromImages } from '../media/MediaLayout';
 
 export const OPEN_IMAGE_PICKER_COMMAND = createCommand<void>('OPEN_IMAGE_PICKER_COMMAND');
 
@@ -268,6 +270,24 @@ export class ImageEditingController {
 
   insert(images: readonly MarkdownImageImport[], point: ImageInsertionPoint) {
     this.#editor.update(() => $insertImages(images, point), { discrete: true });
+  }
+
+  insertLayout(images: readonly MarkdownImageImport[], point: ImageInsertionPoint) {
+    this.#editor.update(() => {
+      const node = $createMediaLayout(sourceFromImages(images.map((image) => ({ ...image, title: image.title || null }))));
+      if (point.kind === 'range') {
+        const selection = $tryRestoreSelectionRange(point.range);
+        if (selection) { selection.insertNodes([node]); return; }
+        return;
+      }
+      if (point.kind === 'after-image') {
+        const image = $getNodeByKey(point.key);
+        const parent = image?.getTopLevelElement();
+        if (parent) { parent.insertAfter(node); return; }
+        return;
+      }
+      $getRoot().append(node);
+    }, { discrete: true, tag: HISTORY_PUSH_TAG });
   }
 
   update(key: string, image: MarkdownImageImport) {

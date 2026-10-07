@@ -1,3 +1,4 @@
+import { NativeFileDragSession } from '../lib/nativeFileDrag';
 import React from 'react';
 import { CaptureVideo } from './CaptureVideo';
 import type { VideoCoverState } from '../lib/videoCover';
@@ -163,10 +164,12 @@ export function CaptureSheet({
     if (!isTauri() || phase === 'closed' || phase === 'closing' || phase === 'submitting') return;
     let disposed = false;
     let unlisten: (() => void) | undefined;
+    const nativeDrag = new NativeFileDragSession();
     getCurrentWebview().onDragDropEvent(async ({ payload }) => {
-      if (payload.type === 'enter' || payload.type === 'over') { setDragActive(true); return; }
+      const hasFiles = nativeDrag.update(payload);
+      if (payload.type === 'enter' || payload.type === 'over') { setDragActive(hasFiles); return; }
       setDragActive(false);
-      if (payload.type !== 'drop') return;
+      if (payload.type !== 'drop' || !payload.paths.length) return;
       setDropError(null);
       try {
         const files: File[] = [];

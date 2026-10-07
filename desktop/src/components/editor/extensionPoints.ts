@@ -87,44 +87,57 @@ export type MarkdownEditorPlugin = {
   Component?: React.ComponentType<MarkdownEditorPluginContext>;
 };
 
+/** Immutable, precompiled contributions shared by the document and UI hosts. */
 export class LexicalEditorPluginRegistry {
-  readonly #plugins: MarkdownEditorPlugin[];
+  readonly #nodes: Klass<LexicalNode>[];
+  readonly #extensions: AnyLexicalExtensionArgument[];
+  readonly #commands: SlashCommandDefinition[];
+  readonly #components: { id: string; Component: React.ComponentType<MarkdownEditorPluginContext> }[];
 
   constructor(plugins: readonly MarkdownEditorPlugin[]) {
     const pluginIds = new Set<string>();
-    const commandIds = new Set<string>();
-    plugins.forEach((plugin) => {
+    for (const plugin of plugins) {
       if (pluginIds.has(plugin.id)) {
         throw new Error(`Duplicate Markdown editor plugin: ${plugin.id}`);
       }
       pluginIds.add(plugin.id);
-      plugin.slashCommands?.forEach((command) => {
-        if (commandIds.has(command.id)) {
-          throw new Error(`Duplicate slash command: ${command.id}`);
-        }
-        commandIds.add(command.id);
-      });
-    });
-    this.#plugins = [...plugins].sort(
+    }
+    const ordered = [...plugins].sort(
       (left, right) => (right.priority || 0) - (left.priority || 0),
     );
-  }
-
-  nodes() {
-    return this.#plugins.flatMap((plugin) => plugin.nodes || []);
-  }
-
-  extensions() {
-    return this.#plugins.flatMap((plugin) => plugin.extensions || []);
-  }
-
-  slashCommands() {
-    return this.#plugins.flatMap((plugin) => plugin.slashCommands || []);
-  }
-
-  components() {
-    return this.#plugins.flatMap((plugin) => (
+    this.#nodes = ordered.flatMap((plugin) => plugin.nodes || []);
+    this.#extensions = ordered.flatMap((plugin) => plugin.extensions || []);
+    this.#commands = ordered.flatMap((plugin) => plugin.slashCommands || []);
+    this.#components = ordered.flatMap((plugin) => (
       plugin.Component ? [{ id: plugin.id, Component: plugin.Component }] : []
     ));
+    validateCommandIds(this.#commands);
+    Object.freeze(this.#nodes);
+    Object.freeze(this.#extensions);
+    Object.freeze(this.#commands);
+    Object.freeze(this.#components);
+  }
+
+  nodes() { return this.#nodes; }
+  extensions() { return this.#extensions; }
+  slashCommands() { return this.#commands; }
+  components() { return this.#components; }
+
+  /** Built-ins first, plugin contributions in priority order, host commands last. */
+  composeCommands(
+    builtins: readonly SlashCommandDefinition[],
+    hostCommands: readonly SlashCommandDefinition[],
+  ): SlashCommandDefinition[] {
+    const commands = [...builtins, ...this.#commands, ...hostCommands];
+    validateCommandIds(commands);
+    return commands;
+  }
+}
+
+function validateCommandIds(commands: readonly SlashCommandDefinition[]) {
+  const ids = new Set<string>();
+  for (const command of commands) {
+    if (ids.has(command.id)) throw new Error(`Duplicate slash command: ${command.id}`);
+    ids.add(command.id);
   }
 }

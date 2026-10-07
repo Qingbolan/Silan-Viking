@@ -1,6 +1,6 @@
 //! Thin Tauri command adapter.
 
-use crate::application::{DesktopWorkspace, GenerateCoverAssetInput};
+use crate::application::{DesktopDelivery, DesktopWorkspace, GenerateCoverAssetInput};
 use crate::credential_store::ApiCredentialStatus;
 use crate::deepseek_credentials::DesktopDeepSeekCredentials;
 use crate::model::{
@@ -265,7 +265,7 @@ pub(crate) async fn review_episode_series_language(
 #[tauri::command]
 pub(crate) async fn get_deployment_plan() -> Result<DeploymentPlan, String> {
     run_background("deployment plan", || {
-        DesktopWorkspace::from_environment()?.deployment_plan()
+        DesktopDelivery::from_environment()?.deployment_plan()
     })
     .await
 }
@@ -273,7 +273,7 @@ pub(crate) async fn get_deployment_plan() -> Result<DeploymentPlan, String> {
 #[tauri::command]
 pub(crate) async fn get_delivery_sync_status() -> Result<DeliverySyncStatus, String> {
     run_background("delivery sync status", || {
-        DesktopWorkspace::from_environment()?.delivery_sync_status()
+        DesktopDelivery::from_environment()?.delivery_sync_status()
     })
     .await
 }
@@ -281,7 +281,7 @@ pub(crate) async fn get_delivery_sync_status() -> Result<DeliverySyncStatus, Str
 #[tauri::command]
 pub(crate) async fn pull_remote_content() -> Result<DeliverySyncStatus, String> {
     run_background("pull remote content", || {
-        DesktopWorkspace::from_environment()?.pull_remote_changes()
+        DesktopDelivery::from_environment()?.pull_remote_changes()
     })
     .await
 }
@@ -289,7 +289,7 @@ pub(crate) async fn pull_remote_content() -> Result<DeliverySyncStatus, String> 
 #[tauri::command]
 pub(crate) async fn deploy_content() -> Result<DeployRunStatus, String> {
     run_background("content deploy", || {
-        DesktopWorkspace::from_environment()?.deploy_content()
+        DesktopDelivery::from_environment()?.deploy_content()
     })
     .await
 }
@@ -297,7 +297,7 @@ pub(crate) async fn deploy_content() -> Result<DeployRunStatus, String> {
 #[tauri::command]
 pub(crate) async fn verify_remote_content() -> Result<DeployVerificationResult, String> {
     run_background("remote verification", || {
-        DesktopWorkspace::from_environment()?.verify_remote()
+        DesktopDelivery::from_environment()?.verify_remote()
     })
     .await
 }
@@ -335,7 +335,7 @@ pub(crate) fn remove_workspace_avatar() -> Result<WorkspacePreferences, String> 
 #[tauri::command]
 pub(crate) async fn get_workspace_changes() -> Result<Vec<WorkspaceFileChange>, String> {
     run_background("workspace changes", || {
-        DesktopWorkspace::from_environment()?.workspace_changes()
+        DesktopDelivery::from_environment()?.workspace_changes()
     })
     .await
 }
@@ -343,7 +343,7 @@ pub(crate) async fn get_workspace_changes() -> Result<Vec<WorkspaceFileChange>, 
 #[tauri::command]
 pub(crate) async fn get_workspace_file_diff(path: String, staged: bool) -> Result<String, String> {
     run_background("workspace file diff", move || {
-        DesktopWorkspace::from_environment()?.workspace_file_diff(&path, staged)
+        DesktopDelivery::from_environment()?.workspace_file_diff(&path, staged)
     })
     .await
 }
@@ -352,7 +352,7 @@ pub(crate) async fn get_workspace_file_diff(path: String, staged: bool) -> Resul
 pub(crate) async fn generate_workspace_commit_message() -> Result<String, String> {
     run_background("DeepSeek commit message generation", move || {
         let api_key = crate::ai_engines::text_key()?;
-        DesktopWorkspace::from_environment()?.generate_workspace_commit_message(&api_key)
+        DesktopDelivery::from_environment()?.generate_workspace_commit_message(&api_key)
     })
     .await
 }
@@ -360,7 +360,7 @@ pub(crate) async fn generate_workspace_commit_message() -> Result<String, String
 #[tauri::command]
 pub(crate) async fn stage_workspace_paths(paths: Vec<String>) -> Result<(), String> {
     run_background("stage workspace paths", move || {
-        DesktopWorkspace::from_environment()?.stage_workspace_paths(&paths)
+        DesktopDelivery::from_environment()?.stage_workspace_paths(&paths)
     })
     .await
 }
@@ -368,7 +368,7 @@ pub(crate) async fn stage_workspace_paths(paths: Vec<String>) -> Result<(), Stri
 #[tauri::command]
 pub(crate) async fn unstage_workspace_paths(paths: Vec<String>) -> Result<(), String> {
     run_background("unstage workspace paths", move || {
-        DesktopWorkspace::from_environment()?.unstage_workspace_paths(&paths)
+        DesktopDelivery::from_environment()?.unstage_workspace_paths(&paths)
     })
     .await
 }
@@ -378,7 +378,7 @@ pub(crate) async fn commit_workspace_changes(
     message: String,
 ) -> Result<DeliverySyncStatus, String> {
     run_background("commit workspace changes", move || {
-        DesktopWorkspace::from_environment()?.commit_workspace(&message)
+        DesktopDelivery::from_environment()?.commit_workspace(&message)
     })
     .await
 }
@@ -587,6 +587,17 @@ pub(crate) fn import_media_asset(
     DesktopWorkspace::from_environment()?.import_media_asset(&id, &source_path)
 }
 
+#[tauri::command]
+pub(crate) async fn resolve_media_embeds(
+    source_path: String,
+    references: Vec<String>,
+) -> Result<Vec<Option<String>>, String> {
+    run_background("resolve media embeds", move || {
+        Ok(DesktopWorkspace::from_environment()?.resolve_media_embeds(&source_path, references))
+    })
+    .await
+}
+
 // Native file drops arrive as paths; return bytes without JSON expansion.
 #[tauri::command]
 pub(crate) async fn read_capture_attachment(path: String) -> Result<tauri::ipc::Response, String> {
@@ -770,18 +781,18 @@ where
 
 #[tauri::command]
 pub(crate) fn get_version_status(scope: String) -> Result<VersionStatus, String> {
-    DesktopWorkspace::from_environment()?.version_status(&scope)
+    DesktopDelivery::from_environment()?.version_status(&scope)
 }
 
 #[tauri::command]
 pub(crate) fn release_scope(scope: String, message: String) -> Result<VersionStatus, String> {
-    DesktopWorkspace::from_environment()?.release_scope(&scope, &message)
+    DesktopDelivery::from_environment()?.release_scope(&scope, &message)
 }
 
 #[tauri::command]
 pub(crate) async fn get_release_file_diff(scope: String, path: String) -> Result<String, String> {
     run_background("section commit preview diff", move || {
-        DesktopWorkspace::from_environment()?.release_file_diff(&scope, &path)
+        DesktopDelivery::from_environment()?.release_file_diff(&scope, &path)
     })
     .await
 }
@@ -882,10 +893,20 @@ pub(crate) async fn test_ai_engine(
 }
 
 #[tauri::command]
-pub(crate) fn list_library_series() -> Result<Vec<silan_viking_app::library::LibrarySeries>, String> {
-    DesktopWorkspace::from_environment()?.content_library().series()
+pub(crate) fn list_library_series() -> Result<Vec<silan_viking_app::library::LibrarySeries>, String>
+{
+    DesktopWorkspace::from_environment()?
+        .content_library()
+        .series()
 }
 #[tauri::command]
-pub(crate) async fn operate_content_library(operation: silan_viking_app::library::LibraryOperation) -> Result<(), String> {
-    run_background("content library", move || DesktopWorkspace::from_environment()?.content_library().execute(operation)).await
+pub(crate) async fn operate_content_library(
+    operation: silan_viking_app::library::LibraryOperation,
+) -> Result<(), String> {
+    run_background("content library", move || {
+        DesktopWorkspace::from_environment()?
+            .content_library()
+            .execute(operation)
+    })
+    .await
 }

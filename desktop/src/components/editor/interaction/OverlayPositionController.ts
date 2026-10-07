@@ -73,7 +73,7 @@ export function readEditorToolbarInset(
 ) {
   if (!includeToolbar) return edge;
   const toolbar = container.parentElement?.querySelector<HTMLElement>('.novel-toolbar');
-  if (!toolbar) return edge;
+  if (!toolbar || toolbar.dataset.placement === 'caret') return edge;
   const containerBounds = container.getBoundingClientRect();
   const toolbarBounds = toolbar.getBoundingClientRect();
   return Math.max(edge, toolbarBounds.bottom - containerBounds.top + gap);

@@ -26,10 +26,14 @@
       "react/*": [
         "./node_modules/@types/react/*"
       ]
-    }
+    },
+    "allowImportingTsExtensions": true
   },
   "include": [
     "src"
   ],
-  "references": []
+  "references": [],
+  "exclude": [
+    "src/components/editor/media/upstream/tests"
+  ]
 }

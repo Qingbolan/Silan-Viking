@@ -1,3 +1,5 @@
+import { TableToolbarActions, useTableToolbar } from './TableToolbarActions';
+import { useCaretChrome } from '../interaction/useCaretChrome';
 import React from 'react';
 import {
   CAN_REDO_COMMAND,
@@ -131,26 +133,35 @@ function useFormattingSnapshot(editor: LexicalEditor | null) {
 
 export function FormattingToolbar({
   editor,
+  visible,
   disabled,
   imageImportEnabled,
   sourceMode,
   onSourceModeChange,
 }: {
   editor: LexicalEditor | null;
+  visible: boolean;
   disabled: boolean;
   imageImportEnabled: boolean;
   sourceMode: boolean;
   onSourceModeChange: (sourceMode: boolean) => void;
 }) {
   const { controller, history, snapshot } = useFormattingSnapshot(editor);
+  const table = useTableToolbar(editor);
+  const [tab, setTab] = React.useState<'text' | 'table'>('table');
+  const contextualTable = !sourceMode && table.state !== null;
+  const shown = visible || contextualTable;
+  React.useEffect(() => setTab('table'), [table.state?.tableKey]);
   const [linkOpen, setLinkOpen] = React.useState(false);
   const [href, setHref] = React.useState('https://');
   const linkSelectionRef = React.useRef<MarkdownSelectionRange | null>(null);
   const toolbarScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const toolbarRef = React.useRef<HTMLDivElement>(null);
+  const chrome = useCaretChrome(editor, toolbarRef, !sourceMode && !disabled, table.state?.cellKey);
 
   React.useLayoutEffect(() => {
     toolbarScrollRef.current?.scrollTo({ behavior: 'auto', left: 0 });
-  }, [snapshot.block, sourceMode]);
+  }, [snapshot.block, sourceMode, tab]);
 
   const closeLink = () => {
     setLinkOpen(false);
@@ -168,19 +179,30 @@ export function FormattingToolbar({
     if (!editor) return undefined;
     return editor.registerCommand(
       OPEN_LINK_EDITOR_COMMAND,
-      () => (disabled || sourceMode ? false : openLink()),
+      () => (disabled || sourceMode || !shown ? false : openLink()),
       COMMAND_PRIORITY_HIGH,
     );
-  }, [disabled, editor, openLink, sourceMode]);
+  }, [disabled, editor, openLink, sourceMode, shown]);
 
-  return (
-    <div className="novel-toolbar">
+  return (<>
+    {!sourceMode && chrome.caret && <span key={`${chrome.caret.left}:${chrome.caret.top}:${chrome.caret.height}`} aria-hidden="true" className="lexical-measured-caret" style={chrome.caret} />}
+    <div ref={toolbarRef} className="novel-toolbar" data-placement={sourceMode ? 'fixed' : 'caret'} style={{ ...(sourceMode ? {} : chrome.toolbar), display: shown ? undefined : 'none' }}>
       <div
         ref={toolbarScrollRef}
         className="novel-toolbar__scroll"
         role="toolbar"
-        aria-label="Markdown formatting"
+        aria-label={contextualTable && tab === 'table' ? 'Table actions' : 'Markdown formatting'}
       >
+        {contextualTable && <>
+          <button type="button" aria-label="Text actions" aria-pressed={tab === 'text'} className={tab === 'text' ? 'active' : ''}
+            onMouseDown={(event) => event.preventDefault()} onClick={() => setTab('text')} title="Text actions">Aa</button>
+          <button type="button" aria-label="Table actions" aria-pressed={tab === 'table'} className={tab === 'table' ? 'active' : ''}
+            onMouseDown={(event) => event.preventDefault()} onClick={() => setTab('table')} title="Table actions"><Table2 size={16} /></button>
+          <span className="novel-toolbar-divider" aria-hidden="true" />
+        </>}
+        {contextualTable && tab === 'table' && table.controller && table.state
+          ? <TableToolbarActions controller={table.controller} state={table.state} />
+          : <>
         <label className="novel-block-format" title="Block style — ⌘0–⌘6">
           <select
             aria-label="Block style"
@@ -281,6 +303,7 @@ export function FormattingToolbar({
         >
           <Code2 size={16} />
         </button>
+        </>}
       </div>
       {linkOpen && (
         <form
@@ -326,5 +349,5 @@ export function FormattingToolbar({
         </form>
       )}
     </div>
-  );
+  </>);
 }

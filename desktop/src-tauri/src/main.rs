@@ -66,6 +66,7 @@ fn main() {
             commands::delete_private_resource,
             commands::import_episode_series_media_asset,
             commands::import_media_asset,
+            commands::resolve_media_embeds,
             commands::import_media_asset_bytes,
             commands::import_media_asset_data,
             commands::read_capture_attachment,

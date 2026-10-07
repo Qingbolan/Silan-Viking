@@ -34,7 +34,9 @@ import {
   autoLinkEmailMatcher,
   autoLinkUrlMatcher,
 } from '@lexical/link';
-import type { MarkdownEditorPlugin } from '../extensionPoints';
+import type { LexicalEditorPluginRegistry } from '../extensionPoints';
+import { ScientificMarkdownExtension } from './ScientificMarkdown';
+import { MediaLayoutExtension } from '../media/MediaLayoutNode';
 import { MarkdownImageExtension } from './MarkdownImage';
 import { MarkdownTableSemanticsExtension } from './MarkdownTable';
 
@@ -234,7 +236,7 @@ const editorTheme = {
 
 export function createMarkdownEditorExtension(
   readOnly: boolean,
-  plugins: readonly MarkdownEditorPlugin[],
+  registry: LexicalEditorPluginRegistry,
   initialMarkdown: string,
 ) {
   return defineExtension({
@@ -248,6 +250,8 @@ export function createMarkdownEditorExtension(
       MarkdownUnderlineExtension,
       MdastExtension,
       MarkdownImageExtension,
+      MediaLayoutExtension,
+      ScientificMarkdownExtension,
       configExtension(MdastShortcutsExtension, { disabled: readOnly }),
       configExtension(TabIndentationExtension, {
         $canIndent: $isListItemNode,
@@ -257,12 +261,12 @@ export function createMarkdownEditorExtension(
       ...(!readOnly ? [configExtension(AutoLinkExtension, {
         matchers: [autoLinkUrlMatcher, autoLinkEmailMatcher],
       })] : []),
-      ...plugins.flatMap((plugin) => plugin.extensions || []),
+      ...registry.extensions(),
     ],
     editable: !readOnly,
     name: 'silan/markdown-editor',
     namespace: 'silan-markdown-editor',
-    nodes: [ReviewTextNode, ...plugins.flatMap((plugin) => plugin.nodes || [])],
+    nodes: [ReviewTextNode, ...registry.nodes()],
     onError: (error: Error) => {
       throw error;
     },

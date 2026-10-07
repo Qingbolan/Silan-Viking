@@ -1,3 +1,4 @@
+import { useResolvedMedia } from '../media/MediaEnvironment';
 import { $createLinkNode } from '@lexical/link';
 import React from 'react';
 import { isVideoResource } from '../../../lib/media';
@@ -36,17 +37,18 @@ function MarkdownImageView({ alt, src, title, poster }: MarkdownImageData) {
 
   React.useEffect(() => setLoadState('loading'), [src]);
 
+  const resolved = useResolvedMedia(src);
   const video = isVideoResource(src);
   return (
     <>
       {video ? (
-        <video src={src} poster={poster} controls playsInline preload="metadata" aria-label={alt || title || 'Video'}
+        <video src={resolved} poster={poster} controls playsInline preload="metadata" aria-label={alt || title || 'Video'}
           data-load-state={loadState}
           onLoadedMetadata={() => setLoadState('ready')}
           onError={() => setLoadState('error')}
         />
       ) : <img
-        src={src}
+        src={resolved}
         alt={alt}
         title={title || undefined}
         draggable={false}

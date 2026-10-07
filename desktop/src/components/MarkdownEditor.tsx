@@ -1,3 +1,9 @@
+import { createPortal } from 'react-dom';
+import { readMediaSettings } from './editor/media/MediaLayoutSettings';
+import { MediaEnvironmentProvider } from './editor/media/MediaEnvironment';
+import type { MediaWorkspacePort } from './editor/media/MediaWorkspace';
+import { MediaReferenceProvider } from './editor/media/MediaReferences';
+import { BlockInteractionPlugin } from './editor/plugins/BlockInteractionPlugin';
 import { cleanMarkdownHeadings } from './editor/model/MarkdownHygiene';
 import React from 'react';
 import { LexicalExtensionComposer } from '@lexical/react/LexicalExtensionComposer';
@@ -54,16 +60,15 @@ import {
   SlashCommandPlugin,
 } from './editor/plugins/SlashCommandPlugin';
 import {
-  ActiveBlockPlugin,
-  BlockDragPlugin,
   CodeHighlightPlugin,
   EditorKeymapPlugin,
   MarkdownPastePlugin,
 } from './editor/plugins/EditorBehaviorPlugin';
 import { FormattingToolbar } from './editor/plugins/FormattingToolbarPlugin';
 import { SelectionBubblePlugin } from './editor/plugins/SelectionBubblePlugin';
-import { TableToolbarPlugin } from './editor/plugins/TableToolbarPlugin';
 import { ImageEditingPlugin } from './editor/plugins/ImageEditingPlugin';
+import { MediaLayoutPlugin } from './editor/media/MediaLayoutPlugin';
+import { wrapSourceSelection } from './editor/media/MediaLayoutCommands';
 import {
   $focusReviewFinding,
   ReviewPlugin,
@@ -107,6 +112,8 @@ export type { MarkdownDocumentMeta } from './editor/plugins/DocumentTitlePlugin'
 
 export type MarkdownEditorProps = {
   value: string;
+  mediaWorkspace?: MediaWorkspacePort;
+  mediaSourcePath?: string;
   className?: string;
   ariaLabel?: string;
   disabled?: boolean;
@@ -131,6 +138,10 @@ export type MarkdownEditorProps = {
   ) => Promise<MarkdownSelectionAssistResult>;
   onReviewFindingActivate?: (findingId: string) => void;
 };
+
+function styleRetainedSelection(nodes: readonly HTMLElement[]) {
+  nodes.forEach((node) => node.classList.add('lexical-retained-selection'));
+}
 
 const emptyPlugins: MarkdownEditorPlugin[] = [];
 const emptySlashCommands: SlashCommandDefinition[] = [];
@@ -199,6 +210,8 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
     onSelectionAssist,
     selectionAssistDisabledReason = null,
     onReviewFindingActivate,
+    mediaWorkspace,
+    mediaSourcePath,
   }, forwardedRef) {
     const sourceRef = React.useRef<HTMLTextAreaElement | null>(null);
     const sourceHighlightRef = React.useRef<HTMLPreElement | null>(null);
@@ -215,6 +228,8 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
       end: number;
       text: string;
     } | null>(null);
+    const [sourceMenu, setSourceMenu] = React.useState<{ x: number; y: number; source: string; start: number; end: number } | null>(null);
+    React.useEffect(() => { if (!sourceMenu) return; const close = () => setSourceMenu(null); window.addEventListener('pointerdown', close); return () => window.removeEventListener('pointerdown', close); }, [sourceMenu]);
     const [sourceAssistBusy, setSourceAssistBusy] = React.useState<MarkdownSelectionAssistAction | 'copy' | null>(null);
     const [sourceAssistError, setSourceAssistError] = React.useState('');
     const [sourceInstructionOpen, setSourceInstructionOpen] = React.useState(false);
@@ -222,18 +237,13 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
 
     const registry = React.useMemo(() => new LexicalEditorPluginRegistry(plugins), [plugins]);
     const extension = React.useMemo(
-      () => createMarkdownEditorExtension(readOnly, plugins, initialValueRef.current),
-      [plugins, readOnly],
+      () => createMarkdownEditorExtension(readOnly, registry, initialValueRef.current),
+      [registry, readOnly],
     );
-    const availableSlashCommands = React.useMemo(() => {
-      const commands = [...defaultSlashCommands, ...registry.slashCommands(), ...slashCommands];
-      const ids = new Set<string>();
-      commands.forEach((command) => {
-        if (ids.has(command.id)) throw new Error(`Duplicate slash command: ${command.id}`);
-        ids.add(command.id);
-      });
-      return commands;
-    }, [registry, slashCommands]);
+    const availableSlashCommands = React.useMemo(
+      () => registry.composeCommands(defaultSlashCommands, slashCommands),
+      [registry, slashCommands],
+    );
     const activeEditingMode = editingMode ?? uncontrolledMode;
     const sourceMode = activeEditingMode === 'source';
     const inactive = disabled || readOnly;
@@ -514,17 +524,19 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
         onMouseDown={(event) => {
           if (sourceMode || inactive || !editor || phase !== 'ready') return;
           const target = event.target as HTMLElement;
-          if (
-            target !== event.currentTarget
-            && !target.classList.contains('novel-editor-root')
-            && !target.classList.contains('lexical-editor-surface')
-          ) return;
+          // Nested editors own their clicks. Class names alone also match a
+          // text column's surface and incorrectly move the outer caret to EOF.
+          if (target.closest('.lexical-markdown-editor') !== event.currentTarget) return;
+          // Let the editable surface place the caret at the pointer position.
+          if (target !== event.currentTarget && !target.classList.contains('novel-editor-root')) return;
+          event.preventDefault();
           focusEditorAtEnd(editor);
         }}
       >
-        {!readOnly && toolbarVisible && (
+        {!readOnly && (
           <FormattingToolbar
             editor={editor}
+            visible={toolbarVisible}
             disabled={disabled || phase !== 'ready'}
             imageImportEnabled={Boolean(onImportImages)}
             sourceMode={sourceMode}
@@ -533,6 +545,7 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
         )}
 
         <LexicalExtensionComposer extension={extension} contentEditable={null}>
+          <MediaEnvironmentProvider workspace={mediaWorkspace} sourcePath={mediaSourcePath}><MediaReferenceProvider>
           <div className="novel-editor-root">
             <RichTextPlugin
               contentEditable={(
@@ -557,7 +570,7 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
             <ClickableLinkPlugin disabled={!readOnly} />
             <TablePlugin hasCellMerge={false} hasHorizontalScroll />
             <CodeHighlightPlugin />
-            {!readOnly && !sourceMode && <SelectionAlwaysOnDisplay />}
+            {!readOnly && !sourceMode && <SelectionAlwaysOnDisplay onReposition={styleRetainedSelection} />}
             {!readOnly && <EditorKeymapPlugin onToggleSourceMode={enterSourceMode} />}
             {!readOnly && (
               <ImageEditingPlugin
@@ -567,8 +580,8 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
               />
             )}
             {!readOnly && <MarkdownPastePlugin disabled={disabled || sourceMode} />}
-            {!readOnly && <ActiveBlockPlugin disabled={disabled || sourceMode} />}
-            {!readOnly && <BlockDragPlugin disabled={disabled || sourceMode} />}
+            {!readOnly && <MediaLayoutPlugin disabled={disabled || sourceMode} onImportImages={onImportImages} workspace={mediaWorkspace} />}
+            {!readOnly && <BlockInteractionPlugin disabled={disabled || sourceMode} />}
             {!readOnly && (
               <SlashCommandPlugin
                 commands={availableSlashCommands}
@@ -577,10 +590,6 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
             )}
             {!readOnly && !sourceMode && (
               <>
-                <TableToolbarPlugin
-                  disabled={disabled}
-                  offsetForMainToolbar={toolbarVisible}
-                />
                 <SelectionBubblePlugin
                   disabled={disabled}
                   offsetForMainToolbar={toolbarVisible}
@@ -602,6 +611,7 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
               <Component key={id} readOnly={readOnly} />
             ))}
           </div>
+        </MediaReferenceProvider></MediaEnvironmentProvider>
         </LexicalExtensionComposer>
 
         {!readOnly && sourceMode && (
@@ -625,16 +635,34 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
               onChange={(event) => syncSourceToTree(event.target.value)}
               onBlur={(event) => syncSourceToTree(cleanMarkdownHeadings(event.target.value))}
               onKeyDown={(event) => {
+                const shortcut = readMediaSettings().wrapShortcut;
+                if (shortcut && (event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === shortcut.toLowerCase()) {
+                  event.preventDefault();
+                  const next = wrapSourceSelection(value, event.currentTarget.selectionStart, event.currentTarget.selectionEnd);
+                  if (next) syncSourceToTree(next);
+                  return;
+                }
                 const action = resolveEditorShortcut(event.nativeEvent, 'source');
                 if (action?.kind !== 'toggle-source') return;
                 event.preventDefault();
                 updateSourceMode(false);
+              }}
+              onContextMenu={event => {
+                const start = event.currentTarget.selectionStart, end = event.currentTarget.selectionEnd;
+                if (start === end || !wrapSourceSelection(value, start, end)) return;
+                event.preventDefault(); setSourceMenu({ x: event.clientX, y: event.clientY, source: value, start, end });
               }}
               onScroll={syncSourceScroll}
               onKeyUp={updateSourceSelection}
               onMouseUp={updateSourceSelection}
               onSelect={updateSourceSelection}
             />
+            {sourceMenu && createPortal(<div className="image-layout-context-menu" role="menu" style={{ left: Math.min(sourceMenu.x, window.innerWidth - 240), top: Math.min(sourceMenu.y, window.innerHeight - 60) }} onPointerDown={event => event.stopPropagation()} onKeyDown={event => { if (event.key === 'Escape') setSourceMenu(null); }}>
+              <button role="menuitem" onClick={() => {
+                if (valueRef.current === sourceMenu.source) { const next = wrapSourceSelection(sourceMenu.source, sourceMenu.start, sourceMenu.end); if (next) syncSourceToTree(next); }
+                setSourceMenu(null);
+              }}>将选区转换为布局</button>
+            </div>, document.body)}
             {sourceSelection && (
               <div className="novel-source-selection-menu" role="toolbar" aria-label="Selected text actions">
                 {sourceInstructionOpen ? (
@@ -662,6 +690,10 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
                   </form>
                 ) : (
                   <>
+                    <button type="button" title="将选中的整行转换为布局" onMouseDown={(event) => event.preventDefault()} onClick={() => {
+                      const next = wrapSourceSelection(value, sourceSelection.start, sourceSelection.end);
+                      if (next) syncSourceToTree(next);
+                    }}>转为布局</button>
                     <button
                       type="button"
                       aria-label="Copy"

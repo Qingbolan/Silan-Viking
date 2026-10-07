@@ -1,4 +1,9 @@
+import { useLooseMediaDrag } from '../media/useLooseMediaDrag';
 import React from 'react';
+import { createPortal } from 'react-dom';
+import { INSERT_LAYOUT_PICKER } from '../media/MediaLayoutCommands';
+import { readMediaSettings } from '../media/MediaLayoutSettings';
+import { isVideoFile, MEDIA_FILE_ACCEPT } from '../../../lib/media';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {
   CLICK_COMMAND,
@@ -14,6 +19,8 @@ import {
   Check,
   Copy,
   Image as ImageIcon,
+  Columns2,
+  GripVertical,
   LoaderCircle,
   Pencil,
   RefreshCw,
@@ -42,6 +49,9 @@ import {
   type OverlayPosition,
 } from '../interaction/OverlayPositionController';
 import { readEditorSnapshot } from '../model/MarkdownDocument';
+import { $wrapImageLayout } from '../media/MediaLayoutController';
+import { HISTORY_PUSH_TAG } from 'lexical';
+import type { LayoutPreset } from '../media/MediaLayoutController';
 
 type ImageImportStatus = {
   phase: 'importing' | 'complete' | 'error';
@@ -70,13 +80,69 @@ export function ImageEditingPlugin({
   const insertionInputRef = React.useRef<HTMLInputElement | null>(null);
   const replacementInputRef = React.useRef<HTMLInputElement | null>(null);
   const replacementTargetRef = React.useRef<ImageSelectionState | null>(null);
+  const layoutInsertionRef = React.useRef(false);
+  React.useEffect(() => {
+    const input = insertionInputRef.current;
+    const cancel = () => { layoutInsertionRef.current = false; };
+    input?.addEventListener('cancel', cancel);
+    return () => input?.removeEventListener('cancel', cancel);
+  }, []);
   const [selection, setSelection] = React.useState<ImageSelectionState | null>(null);
+  const looseDrag = useLooseMediaDrag(editor, selection, disabled);
   const [position, setPosition] = React.useState(hiddenPosition);
   const [dimensions, setDimensions] = React.useState('');
   const [metadataOpen, setMetadataOpen] = React.useState(false);
   const [altDraft, setAltDraft] = React.useState('');
   const [titleDraft, setTitleDraft] = React.useState('');
   const [status, setStatus] = React.useState<ImageImportStatus>(null);
+  const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; image: ImageSelectionState } | null>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+  const createLayout = (image: ImageSelectionState, options: LayoutPreset = {}) => {
+    setContextMenu(null);
+    editor.update(() => {
+      if (!$wrapImageLayout(image.key, options)) setStatus({ phase: 'error', message: '此图片位于链接、列表或表格等嵌套结构中，暂不支持转换为布局。' });
+    }, { discrete: true, tag: HISTORY_PUSH_TAG });
+  };
+
+  React.useEffect(() => {
+    if (disabled) { setContextMenu(null); return; }
+    const openMenu = (event: MouseEvent) => {
+      editor.update(() => {
+        if (!$selectImageFromDOM(event.target)) return;
+        const image = $readSelectedImage();
+        if (!image) return;
+        event.preventDefault();
+        setContextMenu({ x: event.clientX, y: event.clientY, image });
+      }, { discrete: true });
+    };
+    return editor.registerRootListener((root, previous) => {
+      previous?.removeEventListener('contextmenu', openMenu);
+      root?.addEventListener('contextmenu', openMenu);
+    });
+  }, [disabled, editor]);
+
+  React.useLayoutEffect(() => {
+    if (!contextMenu || !menuRef.current) return;
+    const menu = menuRef.current;
+    const bounds = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(contextMenu.x, window.innerWidth - bounds.width - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(contextMenu.y, window.innerHeight - bounds.height - 8))}px`;
+    menu.querySelector<HTMLButtonElement>('button')?.focus();
+    const close = (event: Event) => {
+      if (event.type === 'pointerdown' && menu.contains(event.target as Node)) return;
+      setContextMenu(null);
+    };
+    window.addEventListener('pointerdown', close);
+    window.addEventListener('blur', close);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      window.removeEventListener('pointerdown', close);
+      window.removeEventListener('blur', close);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [contextMenu]);
 
   React.useEffect(() => {
     if (status?.phase !== 'complete') return undefined;
@@ -94,7 +160,9 @@ export function ImageEditingPlugin({
     incomingFiles: readonly File[],
     replacement: ImageSelectionState | null,
   ) => {
-    const files = normalizeImageFiles(incomingFiles);
+    const files = incomingFiles.flatMap((file) => isVideoFile(file) ? [file] : normalizeImageFiles([file]));
+    const asLayout = layoutInsertionRef.current || (readMediaSettings().autoConvert && files.length > 1);
+    layoutInsertionRef.current = false;
     if (disabled || files.length === 0) return;
     if (!onImportImages) {
       setStatus({ phase: 'error', message: 'Image import is not available for this document.' });
@@ -120,7 +188,8 @@ export function ImageEditingPlugin({
           });
         }
       } else if (insertionPoint && imported.length > 0) {
-        controller.insert(imported, insertionPoint);
+        if (asLayout) controller.insertLayout(imported, insertionPoint);
+        else controller.insert(imported, insertionPoint);
       }
       setStatus({
         phase: 'complete',
@@ -139,6 +208,12 @@ export function ImageEditingPlugin({
     };
     update(controller.readSelection());
     return mergeRegister(
+      editor.registerCommand(INSERT_LAYOUT_PICKER, () => {
+        if (disabled) return false;
+        layoutInsertionRef.current = true;
+        window.requestAnimationFrame(() => insertionInputRef.current?.click());
+        return true;
+      }, COMMAND_PRIORITY_HIGH),
       editor.registerUpdateListener(({ editorState }) => {
         update(readEditorSnapshot(editor, editorState, $readSelectedImage));
       }),
@@ -186,7 +261,7 @@ export function ImageEditingPlugin({
           if (disabled || !('clipboardData' in event) || !event.clipboardData) return false;
           if (event.clipboardData.getData('text/markdown')) return false;
           const files = Array.from(event.clipboardData.files || []);
-          if (!files.some((file) => file.type.startsWith('image/'))) return false;
+          if (!files.some((file) => file.type.startsWith('image/') || isVideoFile(file))) return false;
           event.preventDefault();
           void importFiles(files, null);
           return true;
@@ -275,10 +350,30 @@ export function ImageEditingPlugin({
 
   return (
     <>
+      {contextMenu && !disabled && createPortal(<div ref={menuRef} className="image-layout-context-menu" role="menu" aria-label="图片布局"
+        style={{ left: contextMenu.x, top: contextMenu.y }}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.key === 'Escape' || event.key === 'Tab') { setContextMenu(null); editor.focus(); return; }
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button'));
+            const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+            buttons[(current + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length]?.focus();
+          }
+        }}>
+        <span className="image-layout-context-menu__label">图片布局</span>
+        <button role="menuitem" type="button" onClick={() => createLayout(contextMenu.image)}>创建可拖动布局</button>
+        <button role="menuitem" type="button" onClick={() => createLayout(contextMenu.image, { width: 50 })}>半宽 · 50%</button>
+        <button role="menuitem" type="button" onClick={() => createLayout(contextMenu.image, { width: 100 })}>通栏 · 100%</button>
+        {(['left', 'center', 'right'] as const).map((align, index) => <button role="menuitem" type="button" key={align}
+          onClick={() => createLayout(contextMenu.image, { align, width: 60 })}>{['靠左', '居中', '靠右'][index]}排列</button>)}
+        <button role="menuitem" type="button" onClick={() => { setMetadataOpen(true); setContextMenu(null); }}>编辑图片说明</button>
+      </div>, document.body)}
       <input
         ref={insertionInputRef}
         type="file"
-        accept="image/*"
+        accept={MEDIA_FILE_ACCEPT}
         multiple
         className="editor-assist-file-input"
         tabIndex={-1}
@@ -324,6 +419,12 @@ export function ImageEditingPlugin({
             <span>{dimensions || selection.alt || 'Image'}</span>
           </span>
           <span className="lexical-image-toolbar__divider" aria-hidden="true" />
+          <button type="button" title="拖入已有布局" aria-label="Drag image into layout" style={{ touchAction: 'none', cursor: 'grab' }} {...looseDrag}><GripVertical size={14} /></button>
+          <button type="button" className="lexical-image-toolbar__layout" aria-label="Create media layout" title="创建可调整的图片布局"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => createLayout(selection)}>
+            <Columns2 size={14} /><span>图片布局</span>
+          </button>
           <button
             type="button"
             aria-label="Edit image description"

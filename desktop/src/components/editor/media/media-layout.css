@@ -1,0 +1,122 @@
+.lexical-media-layout { position: relative; display: block; margin: 0; padding-block: 0; max-width: 100%; }
+.lexical-media-layout[data-align='center'] { margin-inline: auto; }
+.lexical-media-layout[data-align='right'] { margin-left: auto; }
+/* A zero-height anchor lets a zero-width spacer delay only the float, not prose. */
+.lexical-media-layout[data-wrap='left'], .lexical-media-layout[data-wrap='right'] { height: 0; margin: 0; overflow: visible; }
+.lexical-media-layout[data-wrap='left']::before, .lexical-media-layout[data-wrap='right']::before { content: ''; display: block; width: 0; height: calc(var(--media-skip, 0) * 1lh); }
+.lexical-media-layout[data-wrap='left']::before { float: left; }
+.lexical-media-layout[data-wrap='right']::before { float: right; }
+.lexical-media-layout[data-wrap='left'] > .vml-layout { float: left; clear: left; width: var(--media-width); margin: 0 1.5em 0 0; }
+.lexical-media-layout[data-wrap='right'] > .vml-layout { float: right; clear: right; width: var(--media-width); margin: 0 0 0 1.5em; }
+.lexical-editor-surface::after { content: ''; display: block; clear: both; }
+.vml-layout { position: relative; min-width: 0; border-radius: 6px; }
+.vml-layout[data-editable='true']:hover, .vml-layout[data-editable='true']:focus-within { outline: 1px solid #3b82f6; outline-offset: 5px; }
+.vml-toolbar { position: absolute; z-index: 6; inset: -14px 0 auto; height: 0; pointer-events: none; opacity: 0; transition: opacity 120ms ease; }
+.vml-toolbar button { position: absolute; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 4px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 5px; background: #ffffff; color: #6e6e6e; pointer-events: auto; }
+.vml-toolbar button:first-child { left: 50%; transform: translateX(-50%); }
+.vml-toolbar button:last-child { right: 0; }
+.vml-toolbar button:hover { color: #2563eb; background: rgba(59, 130, 246, 0.28); }
+.vml-layout:hover > .vml-toolbar, .vml-layout:focus-within > .vml-toolbar { opacity: 1; }
+.vml-content { display: flex; gap: 18px; min-width: 0; }
+.vml-media { position: relative; flex: 0 0 auto; min-width: 0; }
+.vml-row { position: relative; display: grid; gap: 10px; margin-bottom: 12px; min-width: 0; }
+.vml-row:has(> .vml-item:only-of-type) { display: block; }
+.novel-editor .lexical-editor-surface .vml-item { position: relative; min-width: 0; margin: 0; padding: 0; border: 0; }
+.vml-asset { width: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.novel-editor .lexical-editor-surface .vml-asset img, .novel-editor .lexical-editor-surface .vml-asset video { display: block; width: 100%; height: 100%; object-fit: contain; max-height: 100%; margin: 0; border-radius: 4px; }
+.vml-row:has(> .vml-item:only-of-type) .vml-asset img, .vml-row:has(> .vml-item:only-of-type) .vml-asset video { height: auto; }
+.vml-item figcaption { margin-top: 6px; font-size: 12px; line-height: 1.5; color: #6e6e6e; }
+.vml-grip { position: absolute; left: 5px; top: 5px; display: flex; background: #ffffff; color: #1c1c1c; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 4px; padding: 4px; cursor: grab; touch-action: none; }
+.vml-divider, .vml-row-height, .vml-single-width, .vml-frame-width, .vml-frame-height, .vml-frame-scale { position: absolute; border: 0; padding: 0; background: transparent; touch-action: none; z-index: 4; }
+.vml-divider { right: -9px; top: 0; bottom: 0; width: 8px; cursor: col-resize; }
+.vml-row-height { left: 0; width: 100%; height: 8px; bottom: -8px; cursor: ns-resize; }
+.vml-single-width { right: -5px; top: 0; bottom: 0; width: 8px; cursor: ew-resize; }
+.vml-frame-width { right: -9px; top: 0; bottom: 0; width: 8px; cursor: ew-resize; }
+.vml-frame-width.vml-left-edge { right: auto; left: -9px; }
+.vml-frame-height { bottom: -9px; left: 0; right: 0; height: 8px; cursor: ns-resize; }
+.vml-frame-scale { right: -9px; bottom: -9px; width: 12px; height: 12px; cursor: nwse-resize; background: #3b82f6; border: 2px solid #ffffff; border-radius: 3px; }
+.vml-divider:hover, .vml-row-height:hover, .vml-single-width:hover, .vml-frame-width:hover, .vml-frame-height:hover { background: #3b82f6; border-radius: 3px; }
+.vml-drop-before::before, .vml-drop-after::after, .vml-drop-row-before::before, .vml-drop-row-after::after { content: ''; position: absolute; z-index: 5; border-radius: 2px; background: #2563eb; }
+.vml-drop-before::before { left: -6px; top: 0; bottom: 0; width: 3px; }
+.vml-drop-after::after { right: -6px; top: 0; bottom: 0; width: 3px; }
+.vml-drop-row-before::before { top: -6px; left: 0; right: 0; height: 3px; }
+.vml-drop-row-after::after { bottom: -6px; left: 0; right: 0; height: 3px; }
+.vml-settings { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px; background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.1); font-size: 12px; line-height: 22px; }
+.vml-settings label { display: flex; align-items: center; gap: 5px; }
+.vml-settings input { width: 54px; }
+.vml-settings input, .vml-settings select, .vml-settings button { border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 4px; padding: 3px; background: #ffffff; color: #1c1c1c; font: inherit; }
+.vml-menu { position: fixed; z-index: 19000; display: grid; padding: 6px; min-width: 220px; max-height: 60vh; overflow: auto; background: #ffffff; color: #1c1c1c; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 8px; box-shadow: 0 8px 25px #0002; font-size: 13px; }
+.vml-menu button { padding: 7px 10px; border: 0; text-align: left; background: transparent; }
+.vml-menu button:hover { background: rgba(59, 130, 246, 0.28); }
+.vml-menu label { display: grid; gap: 4px; padding: 6px; }
+.vml-menu textarea { min-height: 60px; padding: 6px; border: 1px solid rgba(0, 0, 0, 0.1); background: transparent; color: inherit; }
+.vml-source textarea { width: 100%; min-height: 180px; padding: 12px; border: 1px solid rgba(0, 0, 0, 0.1); font-family: monospace; font-size: 12px; background: #ffffff; color: #1c1c1c; }
+.vml-text-column { flex: 1 1 0; min-width: 0; }
+.vml-text-column .novel-editor { min-height: 0; background: transparent; font-size: inherit; }
+.vml-text-column .lexical-editor-surface { padding: 0 !important; min-height: 1.5em !important; font-size: inherit; }
+/* Reserve a gutter inside each column so no ancestor can clip its grip. */
+.vml-text-column .novel-editor-root { overflow: visible; padding-left: 30px; }
+.vml-text-column .block-controls {
+  width: 26px;
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #6e6e6e;
+}
+.vml-text-column .block-controls__add { display: none; }
+.vml-viewer, .media-viewer { position: fixed; inset: 0; z-index: 20000; background: #101114f5; color: #fff; display: grid; grid-template-columns: 50px 1fr 50px; grid-template-rows: 55px 1fr 40px; outline: none; }
+.media-viewer-controls { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 14px; }
+.media-viewer button { border: 0; background: transparent; color: inherit; padding: 10px; }
+.media-viewer-prev, .media-viewer-next { font-size: 40px; }
+.media-viewer-stage { overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
+.media-viewer-stage img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; }
+.media-viewer p { grid-column: 1 / -1; text-align: center; font-size: 13px; }
+@media print { .vml-toolbar, .vml-grip, .vml-settings, .vml-menu, .vml-layout button { display: none !important; } .vml-layout { outline: none !important; } .vml-item { break-inside: avoid; } }
+.vml-modal-backdrop { position: fixed; inset: 0; z-index: 19000; background: #0006; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.vml-modal { background: #ffffff; color: #1c1c1c; width: 680px; max-width: 100%; max-height: 85vh; overflow: auto; border-radius: 12px; padding: 22px; box-shadow: 0 18px 60px #0004; font-size: 14px; }
+.vml-modal h2 { font-size: 20px; margin-bottom: 16px; }
+.vml-modal label { display: flex; gap: 10px; align-items: center; margin: 12px 0; }
+.vml-modal button, .vml-modal input, .vml-modal select { border: 1px solid rgba(0, 0, 0, 0.1); padding: 6px 10px; border-radius: 5px; background: transparent; color: inherit; }
+.vml-modal-close { float: right; }
+.vml-modal pre { white-space: pre-wrap; font: 12px/1.5 monospace; padding: 12px; max-height: 300px; overflow: auto; background: #f4f4f3; }
+.vml-reference { color: #2563eb; border: 0; background: none; padding: 0; font: inherit; cursor: pointer; }
+.vml-reference-label { font-weight: 600; }
+
+.vml-text-column .lexical-editor-surface { column-count: var(--vml-cols, 1); column-gap: var(--vml-gap, 2em); column-fill: balance; }
+
+.vml-frame-scale.vml-left-edge { right: auto; left: -9px; cursor: nesw-resize; }
+
+.vml-numbered-caption::before { content: attr(data-vml-caption) ' '; font-weight: 600; }
+
+.vml-link-suggest { position: absolute; z-index: 40; width: min(360px, 90%); max-height: 240px; overflow: auto; background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 6px; box-shadow: 0 8px 24px #0002; }
+.vml-link-suggest button { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 6px 10px; color: #1c1c1c; }
+.vml-link-suggest button[aria-selected='true'] { background: rgba(59, 130, 246, 0.28); }
+.vml-link-suggest small { display: block; opacity: .6; font-size: 10px; overflow-wrap: anywhere; }
+
+.vml-text-column:focus-within .lexical-editor-surface { column-count: 1; }
+
+/* Editing chrome reveals the operation where it happens, without reserving space. */
+.vml-grip, .vml-single-width, .vml-frame-scale { opacity: 0; transition: opacity 120ms ease; }
+.vml-layout:hover .vml-frame-scale, .vml-layout:focus-within .vml-frame-scale,
+.vml-item:hover > .vml-grip, .vml-item:focus-within > .vml-grip,
+.vml-item:hover > .vml-single-width, .vml-item:focus-within > .vml-single-width { opacity: 1; }
+.vml-single-width::after { content: ''; position: absolute; left: 3px; top: 35%; bottom: 35%; width: 2px; background: #3b82f6; border-radius: 2px; }
+.vml-divider::after { content: ''; position: absolute; top: 35%; bottom: 35%; left: 3px; width: 2px; border-radius: 2px; background: #3b82f6; opacity: 0; }
+.vml-row:hover .vml-divider::after, .vml-divider:focus-visible::after { opacity: 1; }
+.vml-layout[data-editable='true'] .vml-asset img { cursor: grab; touch-action: none; }
+.vml-layout[data-editable='true'] .vml-asset img:active { cursor: grabbing; }
+.vml-menu button:focus-visible, .vml-toolbar button:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
+
+.vml-item-moving { opacity: .35; }
+.vml-drag-ghost { position: fixed; z-index: 20001; width: 120px; max-height: 100px; padding: 4px; border: 1px solid #3b82f6; border-radius: 6px; background: #ffffff; box-shadow: 0 8px 24px #0003; opacity: .9; pointer-events: none; }
+.vml-drag-ghost img { display: block; max-width: 100%; max-height: 90px; object-fit: contain; }
+
+.lexical-block-layout-target { position: absolute; z-index: 25; pointer-events: none; border: 2px solid #3b82f6; border-radius: 8px; background: #3b82f620; box-sizing: border-box; }
+.lexical-block-layout-target.media { border-color: transparent; background: transparent; }
+.lexical-block-layout-target > span { position: absolute; top: 6px; left: 6px; padding: 4px 8px; border-radius: 5px; background: #2563eb; color: white; font: 12px/1.4 system-ui; white-space: nowrap; box-shadow: 0 2px 8px #0002; }
+
+.vml-layout, .vml-content, .vml-media, .vml-text-column { padding-block: 0; }
+.vml-row:last-of-type { margin-bottom: 0; }
+.vml-text-column .lexical-editor-surface > :first-child { margin-top: 0; }
+.vml-text-column .lexical-editor-surface > :last-child { margin-bottom: 0; }
+.vml-document-drop { position: fixed; z-index: 20002; pointer-events: none; height: 3px; border-radius: 2px; background: #2563eb; }
+.vml-document-drop span { position: absolute; top: -24px; padding: 3px 7px; background: #2563eb; color: white; border-radius: 4px; font: 12px/1.4 system-ui; }
