@@ -4,8 +4,8 @@
 //! module owns only the protocol mechanics that are identical across providers:
 //! local secret normalization and the read-only `GET /models` verification.
 
+use crate::ai_engine::transport::{AiClientFactory, TransportPolicy};
 use serde::Deserialize;
-use std::time::Duration;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ApiCredentialVerification {
@@ -42,11 +42,7 @@ pub(crate) fn verify_bearer_credential(
     rejected_message: &str,
 ) -> Result<ApiCredentialVerification, ApiCredentialVerificationError> {
     let url = format!("{}{}", api_base.trim_end_matches('/'), models_path);
-    let agent = ureq::AgentBuilder::new()
-        .timeout_connect(Duration::from_secs(4))
-        .timeout_read(Duration::from_secs(10))
-        .timeout_write(Duration::from_secs(4))
-        .build();
+    let agent = AiClientFactory::shared().agent(TransportPolicy::CredentialProbe);
 
     match agent
         .get(&url)

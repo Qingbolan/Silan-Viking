@@ -4,12 +4,12 @@
 //! in [`crate::workspace_content`]; this module owns the OpenAI request and
 //! response contract.
 
+use crate::ai_engine::transport::{AiClientFactory, TransportPolicy};
 use crate::OpenAiApiKey;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::env;
-use std::time::Duration;
 use thiserror::Error;
 
 const DEFAULT_API_BASE: &str = "https://api.openai.com";
@@ -264,11 +264,7 @@ impl OpenAiMarkdownTranslator {
                 .map_err(|e| OpenAiTranslationError::InvalidResponse(e.to_string()));
         }
         let url = format!("{}/v1/responses", self.api_base);
-        let agent = ureq::AgentBuilder::new()
-            .timeout_connect(Duration::from_secs(6))
-            .timeout_read(Duration::from_secs(90))
-            .timeout_write(Duration::from_secs(10))
-            .build();
+        let agent = AiClientFactory::shared().agent(TransportPolicy::Translation);
         let payload = ResponsesRequest {
             model: self.model.as_str(),
             reasoning: ReasoningConfig { effort: "minimal" },

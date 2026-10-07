@@ -255,8 +255,9 @@ Desktop onboarding separates author identity (including an optional managed avat
 from optional AI configuration. The same AI editor is available in Workspace
 Settings. Skipping AI does not prevent creating or opening a workspace.
 
-`engine/crates/silan-viking-app/src/ai_engine.rs` owns configuration validation and
-the common Chat Completions transport. Desktop owns Keychain I/O. Device settings
+`engine/crates/silan-viking-app/src/ai_engine/` separates configuration validation,
+common Chat Completions contracts, and typed HTTP client assembly. The transport
+factory reuses connection pools without caching endpoints, models or credentials. Desktop owns Keychain I/O. Device settings
 live in `$XDG_CONFIG_HOME/silan-viking/ai-engines.json` (default
 `~/.config/silan-viking/ai-engines.json`); only endpoint, model, provider and opaque
 credential references are serialized. API keys live in macOS Keychain under

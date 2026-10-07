@@ -4,9 +4,9 @@
 //! in `delivery_control`, so generated text is always derived from the same
 //! staged index that `commit_workspace` later commits.
 
+use crate::ai_engine::transport::{AiClientFactory, TransportPolicy};
 use crate::DeepSeekApiKey;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use thiserror::Error;
 
 const DEFAULT_API_BASE: &str = "https://api.deepseek.com";
@@ -132,11 +132,7 @@ impl DeepSeekCommitMessageGenerator {
         };
         let payload = serde_json::to_value(payload)
             .map_err(|error| DeepSeekCommitMessageError::InvalidResponse(error.to_string()))?;
-        let agent = ureq::AgentBuilder::new()
-            .timeout_connect(Duration::from_secs(6))
-            .timeout_read(Duration::from_secs(45))
-            .timeout_write(Duration::from_secs(15))
-            .build();
+        let agent = AiClientFactory::shared().agent(TransportPolicy::CommitMessage);
 
         let response: ChatCompletionResponse = match agent
             .post(&url)

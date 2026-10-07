@@ -4,9 +4,9 @@
 //! module owns validation, multipart encoding, the HTTP request, and the
 //! OpenAI response contract.
 
+use crate::ai_engine::transport::{AiClientFactory, TransportPolicy};
 use crate::OpenAiApiKey;
 use serde::Deserialize;
-use std::time::Duration;
 use thiserror::Error;
 
 const DEFAULT_API_BASE: &str = "https://api.openai.com";
@@ -86,12 +86,7 @@ impl OpenAiAudioTranscriber {
             .map(|p| p.endpoint("audio/transcriptions"))
             .or_else(|| self.endpoint.clone())
             .unwrap_or_else(|| format!("{}/v1/audio/transcriptions", self.api_base));
-        let agent = ureq::AgentBuilder::new()
-            .redirects(0)
-            .timeout_connect(Duration::from_secs(6))
-            .timeout_read(Duration::from_secs(90))
-            .timeout_write(Duration::from_secs(20))
-            .build();
+        let agent = AiClientFactory::shared().agent(TransportPolicy::Speech);
 
         let response = match agent
             .post(&url)

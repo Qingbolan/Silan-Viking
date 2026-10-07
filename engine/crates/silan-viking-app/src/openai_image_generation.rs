@@ -4,11 +4,11 @@
 //! This module owns prompt validation, OpenAI request/response parsing, and
 //! decoding the generated image bytes.
 
+use crate::ai_engine::transport::{AiClientFactory, TransportPolicy};
 use crate::OpenAiApiKey;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::time::Duration;
 use thiserror::Error;
 
 const DEFAULT_API_BASE: &str = "https://api.openai.com";
@@ -201,12 +201,7 @@ impl OpenAiImageGenerator {
             .map(|p| p.endpoint("images/generations"))
             .or_else(|| self.endpoint.clone())
             .unwrap_or_else(|| format!("{}/v1/images/generations", self.api_base));
-        let agent = ureq::AgentBuilder::new()
-            .redirects(0)
-            .timeout_connect(Duration::from_secs(6))
-            .timeout_read(Duration::from_secs(180))
-            .timeout_write(Duration::from_secs(10))
-            .build();
+        let agent = AiClientFactory::shared().agent(TransportPolicy::Image);
         let payload = ImageGenerationPayload {
             model: api_key
                 .engine()
