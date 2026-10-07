@@ -19,68 +19,58 @@ export default {
     extend: {
       // Typography
       fontFamily: {
-        'sans': ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
-        'display': ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
-        // The site stays primarily sans-serif; this is reserved for the
-        // oversized personal sign-off in the footer.
-        'signature': ['"DM Serif Display"', 'Iowan Old Style', 'Baskerville', 'Georgia', 'serif'],
-        'mono': ['"JetBrains Mono"', 'Monaco', 'Consolas', 'monospace'],
-        // Yuque-style article body: system + PingFang SC first for CJK,
-        // graceful fallback through Hiragino / YaHei to Helvetica.
-        'article': [
-          '-apple-system', 'BlinkMacSystemFont',
-          '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"',
-          '"Helvetica Neue"', 'Arial', 'sans-serif',
-        ],
-        // Yuque-style inline code: Menlo first (macOS native, matches the
-        // reference) with Monaco / Courier New fallback.
-        'article-mono': ['Menlo', 'Monaco', '"Courier New"', 'monospace'],
+        'sans': ['var(--font-sans)'],
+        'display': ['var(--font-display)'],
+        'signature': ['var(--font-signature)'],
+        'mono': ['var(--font-code)'],
+        'article': ['var(--font-article)'],
+        'article-mono': ['var(--font-article-mono)'],
       },
       
       // Theme-aware colors using CSS custom properties
       colors: {
         // Theme-aware dynamic colors
         theme: {
-          primary: 'var(--color-primary)',
-          'primary-hover': 'var(--color-primaryHover)',
-          'primary-light': 'var(--color-primaryLight)',
-          secondary: 'var(--color-secondary)',
-          'secondary-hover': 'var(--color-secondaryHover)',
-          'secondary-light': 'var(--color-secondaryLight)',
-          accent: 'var(--color-accent)',
-          'accent-hover': 'var(--color-accentHover)',
+          primary: 'var(--ds-color-primary)',
+          'primary-hover': 'var(--ds-color-primary-hover)',
+          'primary-light': 'var(--ds-color-primary-soft)',
+          secondary: 'var(--ds-color-fg-muted)',
+          'secondary-hover': 'var(--ds-color-fg)',
+          'secondary-light': 'var(--ds-color-surface-2)',
+          accent: 'var(--ds-color-accent)',
+          'accent-hover': 'var(--ds-color-accent-hover)',
           
           // Background colors
-          background: 'var(--color-background)',
-          'background-secondary': 'var(--color-backgroundSecondary)',
-          'background-tertiary': 'var(--color-backgroundTertiary)',
+          background: 'var(--ds-color-canvas)',
+          'background-secondary': 'var(--ds-color-surface-2)',
+          'background-tertiary': 'var(--ds-color-surface-3)',
           
           // Text colors
-          'text-primary': 'var(--color-textPrimary)',
-          'text-secondary': 'var(--color-textSecondary)',
-          'text-tertiary': 'var(--color-textTertiary)',
+          'text-primary': 'var(--ds-color-fg)',
+          'text-secondary': 'var(--ds-color-fg-muted)',
+          'text-tertiary': 'var(--ds-color-fg-subtle)',
           
           // Surface colors
-          'card-background': 'var(--color-cardBackground)',
-          'card-border': 'var(--color-cardBorder)',
-          surface: 'var(--color-surface)',
-          'surface-secondary': 'var(--color-surfaceSecondary)',
-          'surface-tertiary': 'var(--color-surfaceTertiary)',
-          'surface-elevated': 'var(--color-surfaceElevated)',
+          'card-background': 'var(--ds-color-surface-1)',
+          'card-border': 'var(--ds-color-border)',
+          surface: 'var(--ds-color-surface-1)',
+          'surface-secondary': 'var(--ds-color-surface-2)',
+          'surface-tertiary': 'var(--ds-color-surface-3)',
+          'surface-elevated': 'var(--ds-color-surface-1)',
           
           // Interactive states
-          'hover-background': 'var(--color-hoverBackground)',
-          'active-background': 'var(--color-activeBackground)',
-          'focus-ring': 'var(--color-focusRing)',
+          'hover-background': 'var(--ds-color-hover)',
+          'active-background': 'var(--ds-color-active)',
+          'focus-ring': 'var(--ds-color-ring)',
           
           // Status colors
-          success: 'var(--color-success)',
-          warning: 'var(--color-warning)',
-          error: 'var(--color-error)',
+          success: 'var(--ds-color-success)',
+          warning: 'var(--ds-color-warning)',
+          error: 'var(--ds-color-error)',
         },
         
         // Design-system colors — Fluent skeleton, academic restraint.
-        // Driven by --ds-color-* (written per-theme by ThemeContext).
+        // Driven by the validated theme token contract and ThemeSession.
         // Use these in new design-system components and the /gallery page.
         ds: {
           canvas: 'var(--ds-color-canvas)',
@@ -101,15 +91,17 @@ export default {
           'accent-hover': 'var(--ds-color-accent-hover)',
           'accent-fg': 'var(--ds-color-accent-fg)',
           'accent-soft': 'var(--ds-color-accent-soft)',
-          fg: 'var(--color-textPrimary)',
-          'fg-muted': 'var(--color-textSecondary)',
-          'fg-subtle': 'var(--color-textTertiary)',
-          success: 'var(--color-success)',
+          fg: 'var(--ds-color-fg)',
+          'fg-muted': 'var(--ds-color-fg-muted)',
+          'fg-subtle': 'var(--ds-color-fg-subtle)',
+          success: 'var(--ds-color-success)',
           'success-soft': 'var(--ds-color-success-soft)',
-          warning: 'var(--color-warning)',
+          warning: 'var(--ds-color-warning)',
           'warning-soft': 'var(--ds-color-warning-soft)',
-          error: 'var(--color-error)',
+          error: 'var(--ds-color-error)',
           'error-soft': 'var(--ds-color-error-soft)',
+          'error-fg': 'var(--ds-color-error-fg)',
+          'on-solid': 'var(--ds-color-on-solid)',
         },
 
         // Static color palette - Professional and Clean
@@ -262,7 +254,7 @@ export default {
         'mobile-4xl': ['2rem', { lineHeight: '2.5rem' }],      // 32px
 
         // Design-system type ramp. These map `text-ds-*` to the
-        // `--ds-text-*` variables defined in src/styles/design-system.css.
+        // `--ds-text-*` variables supplied by the theme token contract.
         // Without these entries every `ds/` component's `text-ds-*` class is
         // a no-op and falls back to the inherited body size.
         'ds-2xs': ['var(--ds-text-2xs)', { lineHeight: '1.4' }],
@@ -317,18 +309,18 @@ export default {
 
       // Design-system motion — durations + Fluent easing curves.
       transitionDuration: {
-        'ds-instant': '67ms',
-        'ds-fast': '120ms',
-        'ds-normal': '180ms',
-        'ds-slow': '260ms',
-        'ds-slower': '400ms',
+        'ds-instant': 'var(--ds-duration-instant)',
+        'ds-fast': 'var(--ds-duration-fast)',
+        'ds-normal': 'var(--ds-duration-normal)',
+        'ds-slow': 'var(--ds-duration-slow)',
+        'ds-slower': 'var(--ds-duration-slower)',
       },
       transitionTimingFunction: {
-        'ds-standard': 'cubic-bezier(0.2, 0, 0, 1)',
-        'ds-emphasized': 'cubic-bezier(0.4, 0, 0.2, 1)',
-        'ds-decelerate': 'cubic-bezier(0, 0, 0.2, 1)',
-        'ds-out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
-        'ds-out-back': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'ds-standard': 'var(--ds-ease-standard)',
+        'ds-emphasized': 'var(--ds-ease-emphasized)',
+        'ds-decelerate': 'var(--ds-ease-decelerate)',
+        'ds-out-expo': 'var(--ds-ease-out-expo)',
+        'ds-out-back': 'var(--ds-ease-out-back)',
       },
 
       // Professional backdrop blur
@@ -338,9 +330,9 @@ export default {
 
       // Gradients using CSS custom properties
       backgroundImage: {
-        'gradient-primary': 'var(--color-gradientPrimary)',
-        'gradient-secondary': 'var(--color-gradientSecondary)',
-        'gradient-accent': 'var(--color-gradientAccent)',
+        'gradient-primary': 'var(--ds-gradient-primary)',
+        'gradient-secondary': 'var(--ds-gradient-secondary)',
+        'gradient-accent': 'var(--ds-gradient-accent)',
       },
 
       zIndex: {

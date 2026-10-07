@@ -25,6 +25,10 @@ file describes how the system is put together.
 
 ## Architecture
 
+Desktop appearance is owned by a [theme package system](silan-viking/32-desktop-theme-system.md):
+explicit source factories, one preview transaction, a versioned CSS token contract,
+and local `silan://themes/` resources independent of published content.
+
 ![Silan Viking architecture](images/silan-context-system-architecture.png)
 
 Editable source:

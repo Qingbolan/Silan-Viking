@@ -10,16 +10,16 @@
 }
 
 .startup-experience {
-  --startup-paper: #f9f9f9;
-  --startup-body: #0a0a0c;
-  --startup-ink: #17203a;
-  --startup-muted: #6e7382;
-  --startup-line: #e3e5ea;
+  --startup-paper: var(--component-startup-experience-startup-paper);
+  --startup-body: var(--component-startup-experience-startup-body);
+  --startup-ink: var(--component-startup-experience-startup-ink);
+  --startup-muted: var(--component-startup-experience-startup-muted);
+  --startup-line: var(--component-startup-experience-startup-line);
   --startup-switch: 1.15s cubic-bezier(0.16, 1.16, 0.32, 1);
   --window-titlebar-surface: var(--startup-paper);
   --window-titlebar-border: transparent;
-  --window-titlebar-foreground: rgba(23, 32, 58, 0.62);
-  --window-navigation-foreground: rgba(23, 32, 58, 0.62);
+  --window-titlebar-foreground: var(--component-startup-experience-window-titlebar-foreground);
+  --window-navigation-foreground: var(--component-startup-experience-window-navigation-foreground);
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -551,7 +551,7 @@
 }
 
 .startup-skip:focus-visible {
-  outline: 2px solid rgba(23, 32, 58, 0.34);
+  outline: var(--component-startup-skip-focus-visible-outline);
   outline-offset: 6px;
 }
 
@@ -587,12 +587,7 @@
 
 .startup-ghost-wordmark > span {
   display: block;
-  background: linear-gradient(
-    180deg,
-    rgba(23, 32, 58, 0.09) 0%,
-    rgba(23, 32, 58, 0.035) 48%,
-    rgba(23, 32, 58, 0) 88%
-  );
+  background: var(--component-startup-ghost-wordmark-span-background);
   background-position: 0 100%;
   background-size: 100% 220%;
   background-clip: text;

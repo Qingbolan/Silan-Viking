@@ -29,9 +29,10 @@ import { contentVisibilityFor, contentStateSummary } from '../lib/contentVisibil
 import { formatShortDate } from '../lib/format';
 import { toWebviewMediaUrl } from '../lib/media';
 import { AiEngineSettings } from './AiEngineSettings';
+import { ThemeSettings } from '../theme/ThemeSettings';
 import type { ContentGroup, WorkspacePreferences } from '../types';
 
-type SettingsTab = 'profile' | 'connection' | 'private';
+type SettingsTab = 'profile' | 'connection' | 'private' | 'appearance';
 type ProfileSavePhase = 'idle' | 'language' | 'avatar' | 'removing';
 
 type WorkspaceSettingsPageProps = {
@@ -63,6 +64,7 @@ const languageOptions = [
 ] as const;
 
 const settingsTabMeta = {
+  appearance: { label: 'Appearance' },
   profile: {
     label: 'Profile',
   },
@@ -502,6 +504,7 @@ export function WorkspaceSettingsPage({
             onPreferencesChange={onPreferencesChange}
           />
         )}
+        {activeTab === 'appearance' && <ThemeSettings />}
         {activeTab === 'connection' && (
           <div className="api-provider-settings">
             <AiEngineSettings />

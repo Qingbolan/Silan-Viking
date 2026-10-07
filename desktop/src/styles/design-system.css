@@ -16,76 +16,8 @@
    no such reset — styles.css leaves element borders alone.)
    ========================================================================== */
 
-:root {
-  /* --- Radius scale (Fluent) ------------------------------------------------ */
-  --ds-radius-xs: 0.1875rem;  /* 3px  */
-  --ds-radius-sm: 0.3125rem;  /* 5px  */
-  --ds-radius-md: 0.5rem;     /* 8px  — default control radius */
-  --ds-radius-lg: 0.75rem;    /* 12px — cards, panels          */
-  --ds-radius-xl: 1rem;       /* 16px — modals                 */
-  --ds-radius-2xl: 1.375rem;  /* 22px — hero / feature         */
-  --ds-radius-full: 9999px;
+/* Theme tokens are projected by ThemeSession from a validated theme package. */
 
-  /* --- Spacing scale (4px base) -------------------------------------------- */
-  --ds-space-1: 0.25rem;  --ds-space-2: 0.5rem;   --ds-space-3: 0.75rem;
-  --ds-space-4: 1rem;     --ds-space-5: 1.5rem;   --ds-space-6: 2rem;
-  --ds-space-7: 3rem;     --ds-space-8: 4rem;     --ds-space-9: 6rem;
-
-  /* --- Motion curves ------------------------------------------------------ */
-  --ds-ease-standard:   cubic-bezier(0.2, 0, 0, 1);
-  --ds-ease-emphasized: cubic-bezier(0.4, 0, 0.2, 1);
-  --ds-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
-  --ds-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
-  --ds-ease-out-expo:   cubic-bezier(0.16, 1, 0.3, 1);
-  --ds-ease-out-back:   cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  /* --- Duration scale ----------------------------------------------------- */
-  --ds-duration-instant: 67ms;  --ds-duration-fast: 120ms;
-  --ds-duration-normal: 180ms;  --ds-duration-slow: 260ms;
-  --ds-duration-slower: 400ms;
-
-  /* --- Backdrop blur ------------------------------------------------------ */
-  --ds-blur-sm: 14px;  --ds-blur-md: 28px;  --ds-blur-lg: 56px;
-
-  /* --- Elevation — layered, honest shadows -------------------------------- */
-  --ds-elevation-0: none;
-  --ds-elevation-1: 0 1px 2px oklch(0 0 0 / 0.06), 0 1px 1px oklch(0 0 0 / 0.04);
-  --ds-elevation-2: 0 4px 10px oklch(0 0 0 / 0.08), 0 1px 3px oklch(0 0 0 / 0.06);
-  --ds-elevation-3: 0 12px 28px oklch(0 0 0 / 0.12), 0 4px 10px oklch(0 0 0 / 0.07);
-  --ds-elevation-4: 0 24px 56px oklch(0 0 0 / 0.16), 0 8px 18px oklch(0 0 0 / 0.10);
-
-  /* --- Typography scale --------------------------------------------------- */
-  --ds-text-2xs: 0.6875rem; --ds-text-xs: 0.75rem;  --ds-text-sm: 0.8125rem;
-  --ds-text-base: 0.9375rem; --ds-text-md: 1rem;    --ds-text-lg: 1.125rem;
-  --ds-text-xl: 1.375rem;  --ds-text-2xl: 1.75rem;  --ds-text-3xl: 2.25rem;
-  --ds-text-4xl: 3rem;
-
-  /* --- Z-index ladder ----------------------------------------------------- */
-  --ds-z-raised: 10;  --ds-z-sticky: 100;  --ds-z-overlay: 1000;
-  --ds-z-modal: 1100; --ds-z-toast: 1200;
-
-  /* --- Material tints (light) — used by .ds-acrylic / .ds-mica ------------ */
-  --ds-glass-tint:   oklch(1 0 0 / 0.62);
-  --ds-glass-edge:   oklch(1 0 0 / 0.55);     /* top highlight stroke      */
-  --ds-glass-inner:  oklch(1 0 0 / 0.40);     /* inner glow                */
-  --ds-glass-shade:  oklch(0.2 0 0 / 0.06);   /* bottom shading            */
-  --ds-mica-tint:    oklch(0.985 0 0 / 0.86);
-}
-
-/* The desktop app has no dark-mode toggle today; these overrides are kept
-   for future-proofing and simply never match while `.dark` is never set. */
-.dark {
-  --ds-elevation-1: 0 1px 2px oklch(0 0 0 / 0.40), 0 1px 1px oklch(0 0 0 / 0.30);
-  --ds-elevation-2: 0 4px 10px oklch(0 0 0 / 0.46), 0 1px 3px oklch(0 0 0 / 0.34);
-  --ds-elevation-3: 0 12px 28px oklch(0 0 0 / 0.56), 0 4px 10px oklch(0 0 0 / 0.38);
-  --ds-elevation-4: 0 24px 56px oklch(0 0 0 / 0.66), 0 8px 18px oklch(0 0 0 / 0.44);
-
-  --ds-glass-tint:  oklch(0.24 0.012 264 / 0.60);
-  --ds-glass-edge:  oklch(1 0 0 / 0.14);
-  --ds-glass-inner: oklch(1 0 0 / 0.06);
-  --ds-glass-shade: oklch(0 0 0 / 0.28);
-  --ds-mica-tint:   oklch(0.19 0.011 264 / 0.86);
-}
 
 /* =============================================================================
    GLASS MATERIALS — the real thing, not a faint tint.
@@ -273,10 +205,7 @@
 /* Flowing brand-gradient text — fixed NUS hues, identical in light/dark.
    The repeating gradient + wide background-size gives the pan room. */
 .ds-text-gradient-flow {
-  background-image: linear-gradient(
-    to right,
-    #EF7C00, #4A90D9, #EF7C00, #4A90D9, #EF7C00
-  );
+  background-image: var(--component-ds-text-gradient-flow-background-image);
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;

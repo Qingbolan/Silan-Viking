@@ -26,6 +26,26 @@ use std::path::PathBuf;
 use tauri::{Emitter, Manager};
 
 #[tauri::command]
+pub(crate) fn list_themes() -> Result<Vec<silan_viking_app::themes::ThemeDescriptor>, String> {
+    if let Some(error) = workspace_runtime::initialization_error() {
+        return Err(error);
+    }
+    if workspace_runtime::selection().is_none() {
+        return Ok(Vec::new());
+    }
+    silan_viking_app::themes::ThemeRepository::new(crate::application::desktop_content_root()?)
+        .list()
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub(crate) fn load_theme(uri: String) -> Result<serde_json::Value, String> {
+    silan_viking_app::themes::ThemeRepository::new(crate::application::desktop_content_root()?)
+        .load(&uri)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub(crate) fn get_workspace_bootstrap_status() -> DesktopBootstrapStatus {
     workspace_onboarding::bootstrap_status()
 }

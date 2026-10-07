@@ -730,6 +730,8 @@ mod tests {
         fs::write(root.path().join("resources/blog/post/en.md"), "body\n").expect("body");
         fs::create_dir_all(root.path().join("agent/notes")).expect("agent");
         fs::write(root.path().join("agent/notes/private.md"), "secret\n").expect("private");
+        fs::create_dir_all(root.path().join("themes/personal")).expect("themes");
+        fs::write(root.path().join("themes/personal/theme.json"), "{}\n").expect("theme");
         git(root.path(), &["init", "-q", "-b", "main"]);
         git(root.path(), &["add", "-A"]);
         git(
@@ -754,7 +756,7 @@ mod tests {
     }
 
     #[test]
-    fn source_snapshot_excludes_private_agent_namespace() {
+    fn source_snapshot_excludes_private_agent_and_theme_namespaces() {
         let (_root, source, _commit) = source_fixture();
         let mut archive = Archive::new(Cursor::new(source.bytes()));
         let paths = archive
@@ -764,6 +766,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(paths.iter().any(|path| path == Path::new("SCHEMA.md")));
         assert!(!paths.iter().any(|path| path.starts_with("agent")));
+        assert!(!paths.iter().any(|path| path.starts_with("themes")));
     }
 
     #[test]

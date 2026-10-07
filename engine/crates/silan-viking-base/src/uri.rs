@@ -1,7 +1,7 @@
 //! `SilanUri` — the `silan://` content address.
 //!
 //! Every addressable thing in silan-viking has a `SilanUri`. The scheme is
-//! `silan://`, the authority is one of two namespaces, and the path locates
+//! `silan://`, the authority is a registered namespace, and the path locates
 //! a Collection / Item / Part within it:
 //!
 //! ```text
@@ -20,7 +20,7 @@ use std::str::FromStr;
 /// The fixed `silan://` scheme prefix.
 const SCHEME: &str = "silan://";
 
-/// The two content namespaces (per `docs/silan-viking/01` §1.2.1).
+/// The content and presentation namespaces (per `docs/silan-viking/01` §1.2.1).
 ///
 /// A namespace is the authority component of a `SilanUri`. The publishability
 /// and direct-write rules live on the L2 `Namespace` trait; this enum is just
@@ -32,6 +32,8 @@ pub enum Namespace {
     Resources,
     /// `silan://agent/` — agent context, never published.
     Agent,
+    /// `silan://themes/` — local presentation packages, never content projections.
+    Themes,
 }
 
 impl Namespace {
@@ -40,6 +42,7 @@ impl Namespace {
         match self {
             Namespace::Resources => "resources",
             Namespace::Agent => "agent",
+            Namespace::Themes => "themes",
         }
     }
 
@@ -48,6 +51,7 @@ impl Namespace {
         match raw {
             "resources" => Some(Namespace::Resources),
             "agent" => Some(Namespace::Agent),
+            "themes" => Some(Namespace::Themes),
             _ => None,
         }
     }
@@ -61,7 +65,7 @@ impl fmt::Display for Namespace {
 
 /// A parsed `silan://` URI.
 ///
-/// Invariant 1: `namespace` is always one of the two known namespaces — an
+/// Invariant 1: `namespace` is always one of the known namespaces — an
 ///   unknown authority is rejected at parse time.
 /// Invariant 2: `segments` never contains an empty string and never contains
 ///   a `/` — the parser splits on `/` and rejects empty segments, so the URI
@@ -139,7 +143,9 @@ impl FromStr for SilanUri {
         let authority = parts.next().unwrap_or_default();
         let namespace = Namespace::parse(authority).ok_or_else(|| BaseError::InvalidUri {
             input: s.to_owned(),
-            reason: format!("unknown namespace `{authority}`; expected `resources` or `agent`"),
+            reason: format!(
+                "unknown namespace `{authority}`; expected `resources`, `agent` or `themes`"
+            ),
         })?;
 
         let segments: Vec<String> = match parts.next() {
@@ -180,6 +186,15 @@ mod tests {
     fn parses_the_agent_namespace() {
         let uri: SilanUri = "silan://agent/notes/recap".parse().expect("valid uri");
         assert_eq!(uri.namespace(), Namespace::Agent);
+    }
+
+    #[test]
+    fn parses_the_theme_package_namespace() {
+        let uri: SilanUri = "silan://themes/paper/theme.json"
+            .parse()
+            .expect("valid uri");
+        assert_eq!(uri.namespace(), Namespace::Themes);
+        assert_eq!(uri.to_string(), "silan://themes/paper/theme.json");
     }
 
     #[test]

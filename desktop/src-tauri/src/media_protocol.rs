@@ -101,6 +101,9 @@ fn content_type_for(path: &Path) -> &'static str {
         .map(str::to_ascii_lowercase)
         .as_deref()
     {
+        Some("json") => "application/json",
+        Some("woff") => "font/woff",
+        Some("woff2") => "font/woff2",
         Some("png") => "image/png",
         Some("jpg" | "jpeg") => "image/jpeg",
         Some("gif") => "image/gif",

@@ -25,7 +25,7 @@ const badgeVariants = cva(
       },
       appearance: {
         soft: '',
-        solid: 'border-transparent text-white',
+        solid: 'border-transparent text-ds-on-solid',
         outline: 'bg-transparent',
       },
       size: {

@@ -10,12 +10,29 @@ mod model;
 mod openai_credentials;
 mod workspace_onboarding;
 mod workspace_runtime;
+use silan_viking_app::local_resources::{
+    create_media_source, create_theme_source, LocalResourceFactory, LocalResourceRegistry,
+    Namespace,
+};
 use tauri::{http, Manager};
 
 fn main() {
+    let resources = LocalResourceRegistry::new([
+        (
+            Namespace::Resources,
+            create_media_source as LocalResourceFactory,
+        ),
+        (
+            Namespace::Themes,
+            create_theme_source as LocalResourceFactory,
+        ),
+    ])
+    .expect("unique local resource factories");
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .register_uri_scheme_protocol("silan", |_ctx, request| silan_protocol_response(request))
+        .register_uri_scheme_protocol("silan", move |_ctx, request| {
+            silan_protocol_response(&resources, request)
+        })
         .setup(|app| {
             workspace_runtime::initialize(app.path().app_config_dir()?)
                 .map_err(std::io::Error::other)?;
@@ -26,6 +43,8 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::list_themes,
+            commands::load_theme,
             commands::capture_blog,
             commands::capture_moment,
             commands::apply_article_image_attribution,
@@ -117,22 +136,26 @@ fn main() {
         .expect("failed to run Silan Context System");
 }
 
-fn silan_protocol_response(request: http::Request<Vec<u8>>) -> http::Response<Vec<u8>> {
+fn silan_protocol_response(
+    resources: &LocalResourceRegistry,
+    request: http::Request<Vec<u8>>,
+) -> http::Response<Vec<u8>> {
     let Ok(content_root) = application::desktop_content_root() else {
         return text_response(
             http::StatusCode::SERVICE_UNAVAILABLE,
             "desktop workspace is not configured",
         );
     };
-    let Ok(library) = silan_viking_app::MediaLibrary::open(content_root) else {
-        return text_response(
-            http::StatusCode::SERVICE_UNAVAILABLE,
-            "workspace unavailable",
-        );
-    };
     let uri = request.uri().to_string();
-    let Ok(path) = library.resolve_local_path(&uri) else {
-        return text_response(http::StatusCode::NOT_FOUND, "asset not found");
+    let path = match resources.resolve(&content_root, &uri) {
+        Ok(path) => path,
+        Err(silan_viking_app::local_resources::LocalResourceError::OpenSource(_)) => {
+            return text_response(
+                http::StatusCode::SERVICE_UNAVAILABLE,
+                "workspace unavailable",
+            );
+        }
+        Err(_) => return text_response(http::StatusCode::NOT_FOUND, "asset not found"),
     };
     media_protocol::respond(&path, &request)
 }

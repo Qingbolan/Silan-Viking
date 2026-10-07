@@ -24,7 +24,7 @@ const iconButtonVariants = cva(
         // Quiet — transparent until hovered. The chrome / toolbar default.
         ghost: 'bg-transparent text-ds-fg-muted hover:bg-ds-surface-2 hover:text-ds-fg',
         // Solid ink — a single emphasised icon action.
-        primary: 'bg-ds-primary text-white shadow-ds-1 hover:bg-ds-primary-hover',
+        primary: 'bg-ds-primary text-ds-primary-fg shadow-ds-1 hover:bg-ds-primary-hover',
         // Filled neutral surface with a hairline.
         surface: 'bg-ds-surface-2 text-ds-fg border border-ds-border hover:bg-ds-surface-3',
         // Frosted glass — for chrome that floats over the desk material.

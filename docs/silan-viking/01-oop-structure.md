@@ -71,6 +71,12 @@ L2 content:  impl Identified for Collection { ... }   ← content inherits base'
 
 ## 1.2.1 Namespace — two namespaces (resources / agent)
 
+The two namespaces below are **content trees**. The address value object also
+recognizes `themes`, a local presentation-package namespace introduced by
+[the desktop theme design](32-desktop-theme-system.md). Themes are resolved by a
+separate resource-source factory and do not enter content scanning, proposals,
+site projection or public source archives.
+
 > The early `Namespace` abstraction was dropped when the doc was
 > split, leaving only `silan://resources/...`. This section restores
 > it — `content/` does not contain only published content; it has

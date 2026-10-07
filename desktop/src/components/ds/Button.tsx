@@ -27,9 +27,8 @@ const buttonVariants = cva(
         secondary: 'bg-ds-surface-2 border border-ds-border text-ds-fg hover:bg-ds-surface-3',
         // Quiet — transparent until hovered.
         ghost: 'border-0 bg-transparent text-ds-fg-muted hover:bg-ds-surface-2 hover:text-ds-fg',
-        // Destructive — irreversible actions only. No `error-fg` token
-        // exists, so the label is plain white; hover deepens via brightness.
-        destructive: 'bg-ds-error text-white hover:brightness-[0.92]',
+        // Destructive — paired foreground/background tokens retain contrast.
+        destructive: 'bg-ds-error text-ds-error-fg hover:brightness-[0.92]',
       },
       size: {
         sm: 'h-9 px-3 gap-2 rounded-ds-md text-ds-sm [&_svg]:size-3.5',
